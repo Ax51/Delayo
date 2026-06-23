@@ -35,7 +35,7 @@ Ideal for those who want focus, organization and a tidier tab bar.
 ## 🛠 Requirements
 
 - Node.js >=20
-- pnpm >=8.15.0
+- Bun >=1.3.14
 
 ---
 
@@ -77,13 +77,13 @@ git clone https://github.com/allud1t/delayo.git
 cd delayo
 
 # 2. Install dependencies
-pnpm install
+bun install
 
 # 3. Start in development mode
-pnpm dev
+bun dev
 
 # 4. Build for production
-pnpm build
+bun run build
 ```
 
 ## 📋 Contributing
@@ -142,7 +142,7 @@ Ideal para quem quer foco, organização e menos bagunça na barra de abas.
 ## 🛠 Requisitos
 
 - Node.js >=20
-- pnpm >=8.15.0
+- Bun >=1.3.14
 
 ---
 
@@ -165,13 +165,13 @@ git clone https://github.com/allud1t/delayo.git
 cd delayo
 
 # 2. Instale dependências
-pnpm install
+bun install
 
 # 3. Rode em modo de desenvolvimento
-pnpm dev
+bun dev
 
 # 4. Build para produção
-pnpm build
+bun run build
 ```
 
 ## 📋 Como Contribuir

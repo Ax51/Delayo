@@ -81,6 +81,12 @@
   "customDelay": {
     "title": "Adiamento Personalizado",
     "selectDateTime": "Selecione Data e Hora",
+    "delayFor": "Adiar por",
+    "relative": {
+      "days": "Dias",
+      "hours": "Horas",
+      "minutes": "Minutos"
+    },
     "delayTab": "Adiar Aba"
   },
   "recurringDelay": {

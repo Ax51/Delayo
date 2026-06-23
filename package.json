@@ -11,7 +11,6 @@
     "test": "vitest run",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "preinstall": "npx only-allow pnpm",
     "release": "standard-version",
     "zip": "powershell -ExecutionPolicy Bypass -File ./scripts/zip.ps1"
   },
@@ -48,7 +47,6 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "lint-staged": "^15.5.0",
-    "pnpm": "^10.12.1",
     "postcss": "^8.4.38",
     "postcss-prefix-selector": "^1.16.0",
     "prettier": "^3.2.5",
@@ -71,19 +69,17 @@
       "prettier --write"
     ]
   },
-  "packageManager": "pnpm@10.6.5+sha512.cdf928fca20832cd59ec53826492b7dc25dc524d4370b6b4adbf65803d32efaa6c1c88147c0ae4e8d579a6c9eec715757b50d4fa35eea179d868eada4ed043af",
+  "packageManager": "bun@1.3.14",
   "engines": {
     "node": ">=20",
-    "pnpm": ">=8.15.0"
+    "bun": ">=1.3.14"
   },
-  "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@swc/core",
-      "esbuild"
-    ],
-    "overrides": {
-      "esbuild": "^0.25.0",
-      "brace-expansion": "^2.0.2"
-    }
+  "trustedDependencies": [
+    "@swc/core",
+    "esbuild"
+  ],
+  "overrides": {
+    "esbuild": "^0.25.0",
+    "brace-expansion": "^2.0.2"
   }
 }

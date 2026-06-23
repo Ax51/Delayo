@@ -26,7 +26,7 @@ Describe the motivation behind the idea and how it could benefit users.
    ```bash
    git checkout -b feat/feature-name
    ```
-3. Follow the code and commit standards (we use commitlint)
+3. Follow the existing code style and commit clearly
 4. Ensure all tests pass (if any)
 5. Open a Pull Request explaining what was done
 
@@ -81,7 +81,7 @@ Descreva a motivação por trás da ideia e como ela poderia beneficiar os usuá
    ```bash
    git checkout -b feat/nome-da-feature
    ```
-3. Siga os padrões de código e commit (usamos commitlint)
+3. Siga o estilo de código existente e use commits claros
 4. Garanta que todos os testes estão passando (caso existam)
 5. Abra um Pull Request explicando o que foi feito
 

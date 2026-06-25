@@ -23,22 +23,22 @@ DaisyUI, i18next, and Vitest.
 
 ## Tooling
 
-Use pnpm for package management. The repo enforces pnpm through `preinstall`.
+Use Bun for package management and local script execution.
 
 Common commands:
 
 ```bash
-pnpm install
-pnpm dev
-pnpm build
-pnpm test
-pnpm lint
-pnpm preview
+bun install
+bun dev
+bun run build
+bun run test
+bun run lint
+bun run preview
 ```
 
-`pnpm build` runs `tsc` before `vite build`. Run it when changes affect extension
+`bun run build` runs `tsc` before `vite build`. Run it when changes affect extension
 packaging, manifest behavior, TypeScript contracts, or release artifacts. Run
-`pnpm test` for logic changes and `pnpm lint` before handing off code changes.
+`bun run test` for logic changes and `bun run lint` before handing off code changes.
 
 ## Code Style
 
@@ -82,7 +82,7 @@ packaging, manifest behavior, TypeScript contracts, or release artifacts. Run
   delayed-tab normalization, extension storage, and background controller flows.
 - Mock Chrome APIs in tests instead of relying on a real browser extension
   runtime.
-- For UI-only changes, at minimum run `pnpm lint`; run `pnpm build` when the
+- For UI-only changes, at minimum run `bun run lint`; run `bun run build` when the
   change could affect bundling, routing, entry points, or TypeScript contracts.
 
 ## Git And Contribution Notes

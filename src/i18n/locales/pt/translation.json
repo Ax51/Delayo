@@ -158,15 +158,6 @@
       "minute": "m"
     }
   },
-  "donation": {
-    "title": "Apoie o Projeto",
-    "description": "Se você gosta do Delayo e quer ajudar a mantê-lo, considere fazer uma doação. Qualquer valor é muito apreciado!",
-    "supportProject": "Apoie o Projeto",
-    "support": "Apoiar",
-    "copyKey": "Copiar Chave",
-    "copiedSuccess": "Chave PIX copiada com sucesso!",
-    "hideQRCode": "Ocultar QR Code"
-  },
   "onboarding": {
     "welcome": {
       "title": "Bem-vindo ao Delayo",
@@ -195,12 +186,5 @@
     "back": "Voltar",
     "finish": "Concluir",
     "close": "Fechar"
-  },
-  "options": {
-    "links": {
-      "repository": "Repositório no GitHub",
-      "features": "Propor Novas Funcionalidades",
-      "issues": "Reportar Problemas"
-    }
   }
 }

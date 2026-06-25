@@ -9,10 +9,16 @@ import '../../i18n';
 import DelaySettingsComponent from './DelaySettings';
 import './options.css';
 
+function getInitialActiveTab(): 'tabs' | 'settings' {
+  return window.location.hash === '#settings' ? 'settings' : 'tabs';
+}
+
 function Options(): React.ReactElement {
   const { delayedTabs, loading, removeDelayedTabs, wakeDelayedTabs } =
     useDelayedTabs();
-  const [activeTab, setActiveTab] = useState<'tabs' | 'settings'>('tabs');
+  const [activeTab, setActiveTab] = useState<'tabs' | 'settings'>(
+    getInitialActiveTab
+  );
   const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
   const { theme, toggleTheme } = useTheme();
   const { t, i18n } = useTranslation();
@@ -50,6 +56,11 @@ function Options(): React.ReactElement {
         ? current.filter((id) => id !== tabId)
         : [...current, tabId]
     );
+  };
+
+  const handleTabChange = (tab: 'tabs' | 'settings'): void => {
+    setActiveTab(tab);
+    window.location.hash = tab === 'settings' ? 'settings' : 'tabs';
   };
 
   const renderLoading = (): React.ReactElement => (
@@ -197,7 +208,7 @@ function Options(): React.ReactElement {
   }
 
   return (
-    <div className='container mx-auto max-w-fit p-4'>
+    <div className='container mx-auto max-w-5xl p-4'>
       <div className='mb-6 flex items-center justify-between'>
         <h1 className='text-2xl font-bold'>{t('manageTabs.title')}</h1>
         <button
@@ -226,37 +237,42 @@ function Options(): React.ReactElement {
         </button>
       </div>
 
-      <div className='tabs mb-6'>
+      <div className='options-content-width'>
+        <div className='tabs mb-6 w-full'>
         <button
           type='button'
-          className={`tab tab-bordered ${activeTab === 'tabs' ? 'tab-active !border-delayo-orange !border-b-[3px]' : ''}`}
-          onClick={() => setActiveTab('tabs')}
+          className={`tab tab-bordered flex-1 ${activeTab === 'tabs' ? 'tab-active !border-delayo-orange !border-b-[3px]' : ''}`}
+          onClick={() => handleTabChange('tabs')}
         >
           <span className='font-bold'>{t('manageTabs.tabsDelayed')}</span>
         </button>
         <button
           type='button'
-          className={`tab tab-bordered ${activeTab === 'settings' ? 'tab-active !border-delayo-orange !border-b-[3px]' : ''}`}
-          onClick={() => setActiveTab('settings')}
+          className={`tab tab-bordered flex-1 ${activeTab === 'settings' ? 'tab-active !border-delayo-orange !border-b-[3px]' : ''}`}
+          onClick={() => handleTabChange('settings')}
         >
           <span className='font-bold'>{t('common.settings')}</span>
         </button>
-      </div>
-
-      {activeTab === 'tabs' ? (
-        content
-      ) : (
-        <div className='settings-width-850'>
-          <DelaySettingsComponent isPopup={false} />
         </div>
-      )}
 
-      <div className='form-control mt-4'>
-        <label className='label'>
-          <span className='label-text font-medium'>{t('settings.language')}</span>
-        </label>
-        <LanguageSelector />
-      </div>
+        {activeTab === 'tabs' ? (
+          content
+        ) : (
+          <DelaySettingsComponent
+            isPopup={false}
+            topContent={
+              <div className='form-control'>
+                <label className='label'>
+                  <span className='label-text font-medium'>
+                    {t('settings.language')}
+                  </span>
+                </label>
+                <LanguageSelector />
+              </div>
+            }
+          />
+        )}
+        </div>
     </div>
   );
 }

@@ -67,6 +67,12 @@ function MainView(): React.ReactElement {
     setSelectedMode(mode);
   };
 
+  const handleOpenSettings = async (): Promise<void> => {
+    const settingsUrl = chrome.runtime.getURL('public/html/options.html#settings');
+    await chrome.tabs.create({ url: settingsUrl });
+    window.close();
+  };
+
   if (loading) {
     return (
       <div className='flex min-h-[300px] items-center justify-center'>
@@ -87,16 +93,19 @@ function MainView(): React.ReactElement {
             Delayo
           </h2>
           <div className='flex items-center space-x-2'>
-            <Link
-              to='/settings'
+            <button
+              type='button'
               className='btn btn-circle btn-ghost btn-sm transition-all duration-200 hover:bg-base-100'
               aria-label={t('popup.actions.openSettings')}
+              onClick={() => {
+                void handleOpenSettings();
+              }}
             >
               <FontAwesomeIcon
                 icon='gear'
                 className='text-neutral-400 hover:text-delayo-orange'
               />
-            </Link>
+            </button>
             <button
               type='button'
               className='btn btn-circle btn-ghost btn-sm transition-all duration-200 hover:bg-base-100'

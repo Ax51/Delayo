@@ -12,7 +12,6 @@ import MainView from './views/MainView';
 import ManageTabsView from './views/ManageTabsView';
 import NotFoundView from './views/NotFoundView';
 import RecurringDelayView from './views/RecurringDelayView';
-import SettingsView from './views/SettingsView';
 
 const rootRoute = createRootRoute({
   notFoundComponent: NotFoundView,
@@ -36,12 +35,6 @@ const recurringDelayRoute = createRoute({
   component: RecurringDelayView,
 });
 
-const settingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/settings',
-  component: SettingsView,
-});
-
 const manageTabsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/manage-tabs',
@@ -52,7 +45,6 @@ const routeTree = rootRoute.addChildren([
   mainRoute,
   customDelayRoute,
   recurringDelayRoute,
-  settingsRoute,
   manageTabsRoute,
 ]);
 

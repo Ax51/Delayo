@@ -1,4 +1,4 @@
-.settings-width-850 {
-  width: 850px;
+.options-content-width {
+  width: min(100%, 850px);
   margin: 0 auto;
 }

@@ -16,10 +16,12 @@ const parseNumberInput = (value: string, fallback: number): number =>
 
 interface DelaySettingsComponentProps {
   isPopup?: boolean;
+  topContent?: React.ReactNode;
 }
 
 function DelaySettingsComponent({
   isPopup = false,
+  topContent,
 }: DelaySettingsComponentProps): React.ReactElement {
   const { t } = useTranslation();
   const { loading, resetSettings, saveSettings, settings, updateSetting } =
@@ -57,6 +59,8 @@ function DelaySettingsComponent({
         <h2 className='card-title mb-4'>{t('settings.defaultDelayOptions')}</h2>
 
         <div className='space-y-4'>
+          {topContent}
+
           <div className='form-control'>
             <label className='label'>
               <span className='label-text font-medium'>

@@ -15,9 +15,7 @@ const namespaces = [
   'recurringDelay',
   'settings',
   'manageTabs',
-  'donation',
   'onboarding',
-  'options',
 ] as const;
 
 function buildResources(translation: TranslationResource) {
@@ -29,9 +27,7 @@ function buildResources(translation: TranslationResource) {
     recurringDelay: translation.recurringDelay,
     settings: translation.settings,
     manageTabs: translation.manageTabs,
-    donation: translation.donation,
     onboarding: translation.onboarding,
-    options: translation.options,
   };
 }
 

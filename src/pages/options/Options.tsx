@@ -1,5 +1,6 @@
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import { formatDateTime, formatTimeLeft } from '@utils/dateTime';
+import { getTabGroupBadgeStyle } from '@utils/tabGroupBadge';
 import useTheme from '@utils/useTheme';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -140,11 +141,27 @@ function Options(): React.ReactElement {
                           }}
                         />
                       )}
-                      <div
-                        className='max-w-[160px] truncate sm:max-w-[220px]'
-                        title={tab.title || tab.url}
-                      >
-                        {tab.title || tab.url || t('manageTabs.unknownTab')}
+                      <div className='min-w-0'>
+                        <div
+                          className='max-w-[160px] truncate sm:max-w-[220px]'
+                          title={tab.title || tab.url}
+                        >
+                          {tab.title || tab.url || t('manageTabs.unknownTab')}
+                        </div>
+                        {tab.group && (
+                          <div className='mt-1'>
+                            <span
+                              className='badge badge-sm max-w-[160px] truncate border text-[10px] font-medium sm:max-w-[220px]'
+                              style={getTabGroupBadgeStyle(tab.group)}
+                            >
+                              {t('manageTabs.groupBadge', {
+                                name:
+                                  tab.group.title?.trim() ||
+                                  t('manageTabs.unnamedGroup'),
+                              })}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>

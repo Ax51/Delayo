@@ -149,6 +149,8 @@
     "remove": "Remover",
     "untitledTab": "Aba sem título",
     "unknownTab": "Aba desconhecida",
+    "groupBadge": "Grupo: {{name}}",
+    "unnamedGroup": "Sem nome",
     "toggleSelection": "Alternar seleção",
     "actions": "Ações",
     "actionsWakeNow": "Acordar {{count}} {{label}} agora",

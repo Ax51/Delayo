@@ -149,6 +149,8 @@
     "remove": "Eliminar",
     "untitledTab": "Pestaña sin título",
     "unknownTab": "Pestaña desconocida",
+    "groupBadge": "Grupo: {{name}}",
+    "unnamedGroup": "Sin nombre",
     "toggleSelection": "Alternar selección",
     "actions": "Acciones",
     "actionsWakeNow": "Despertar {{count}} {{label}} ahora",

@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import { DelayedTab } from '@types';
 import { formatDateTime, formatTimeLeft } from '@utils/dateTime';
+import { getTabGroupBadgeStyle } from '@utils/tabGroupBadge';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -224,6 +225,20 @@ function ManageTabsView(): React.ReactElement {
                       <div className='truncate text-sm font-medium text-base-content/80'>
                         {tab.title || t('manageTabs.untitledTab')}
                       </div>
+                      {tab.group && (
+                        <div className='mt-1'>
+                          <span
+                            className='badge badge-sm max-w-full truncate border text-[10px] font-medium'
+                            style={getTabGroupBadgeStyle(tab.group)}
+                          >
+                            {t('manageTabs.groupBadge', {
+                              name:
+                                tab.group.title?.trim() ||
+                                t('manageTabs.unnamedGroup'),
+                            })}
+                          </span>
+                        </div>
+                      )}
                       <div className='truncate text-xs text-base-content/60'>
                         {formatDateTime(tab.wakeTime, locale)} (
                         {formatTimeLeft(tab.wakeTime, timeLeftLabels)})

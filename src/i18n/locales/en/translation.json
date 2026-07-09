@@ -149,6 +149,8 @@
     "remove": "Remove",
     "untitledTab": "Untitled tab",
     "unknownTab": "Unknown tab",
+    "groupBadge": "Group: {{name}}",
+    "unnamedGroup": "Unnamed",
     "toggleSelection": "Toggle selection",
     "actions": "Actions",
     "actionsWakeNow": "Wake {{count}} {{label}} now",

@@ -119,6 +119,7 @@
     "customButtonLabel": "Custom button {{index}}",
     "showButton": "Show",
     "showCustomButton": "Show",
+    "position": "Position",
     "buttonName": "Button name",
     "laterToday": "Later Today",
     "hours": "hours",

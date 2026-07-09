@@ -363,13 +363,13 @@ export function createPresetDelayOptions(params: {
     })
   );
 
-  const visiblePresetButtons = new Set(settings.visiblePresetButtons);
+  const optionsById = new Map(
+    [...baseOptions, ...customOptions].map(
+      (option) => [option.id as PresetButtonId, option] as const
+    )
+  );
 
-  return [...baseOptions, ...customOptions].filter((option) => {
-    if (!visiblePresetButtons.has(option.id as PresetButtonId)) {
-      return false;
-    }
-
-    return true;
-  });
+  return settings.visiblePresetButtons
+    .map((buttonId) => optionsById.get(buttonId))
+    .filter((option): option is DelayOption => option !== undefined);
 }

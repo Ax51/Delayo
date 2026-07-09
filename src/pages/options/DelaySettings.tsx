@@ -102,6 +102,64 @@ function DelaySettingsComponent({
     updateSetting('customButtons', nextCustomButtons);
   };
 
+  const getButtonPosition = (buttonId: PresetButtonId): number | null => {
+    const index = settings.visiblePresetButtons.indexOf(buttonId);
+
+    return index >= 0 ? index + 1 : null;
+  };
+
+  const setButtonPosition = (
+    buttonId: PresetButtonId,
+    targetPosition: number
+  ): void => {
+    const currentButtons = [...settings.visiblePresetButtons];
+    const currentIndex = currentButtons.indexOf(buttonId);
+    const targetIndex = targetPosition - 1;
+
+    if (
+      currentIndex < 0 ||
+      targetIndex < 0 ||
+      targetIndex >= currentButtons.length ||
+      currentIndex === targetIndex
+    ) {
+      return;
+    }
+
+    [currentButtons[currentIndex], currentButtons[targetIndex]] = [
+      currentButtons[targetIndex],
+      currentButtons[currentIndex],
+    ];
+
+    updateSetting('visiblePresetButtons', currentButtons);
+  };
+
+  const renderPositionControl = (buttonId: PresetButtonId): React.ReactElement | null => {
+    const position = getButtonPosition(buttonId);
+
+    if (position === null) {
+      return null;
+    }
+
+    return (
+      <label className='label gap-2 py-0'>
+        <span className='label-text text-xs'>{t('settings.position')}</span>
+        <select
+          className='select select-bordered select-sm w-16'
+          value={position}
+          onChange={(event) =>
+            setButtonPosition(buttonId, Number.parseInt(event.target.value, 10))
+          }
+        >
+          {settings.visiblePresetButtons.map((_, index) => (
+            <option key={`${buttonId}-position-${index + 1}`} value={index + 1}>
+              {index + 1}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
   if (loading) {
     return (
       <div className='p-8 text-center'>
@@ -128,17 +186,20 @@ function DelaySettingsComponent({
                     {t('settings.presetButtons.later_today')}
                   </h3>
                 </div>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('later_today')}
-                    onChange={(event) =>
-                      setButtonVisibility('later_today', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('later_today')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('later_today')}
+                      onChange={(event) =>
+                        setButtonVisibility('later_today', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('later_today')}
@@ -183,17 +244,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.tonight')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('tonight')}
-                    onChange={(event) =>
-                      setButtonVisibility('tonight', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('tonight')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('tonight')}
+                      onChange={(event) =>
+                        setButtonVisibility('tonight', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('tonight')}
@@ -216,17 +280,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.tomorrow')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('tomorrow')}
-                    onChange={(event) =>
-                      setButtonVisibility('tomorrow', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('tomorrow')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('tomorrow')}
+                      onChange={(event) =>
+                        setButtonVisibility('tomorrow', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('tomorrow')}
@@ -249,17 +316,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.weekend')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('weekend')}
-                    onChange={(event) =>
-                      setButtonVisibility('weekend', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('weekend')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('weekend')}
+                      onChange={(event) =>
+                        setButtonVisibility('weekend', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('weekend')}
@@ -297,17 +367,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.next_week')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('next_week')}
-                    onChange={(event) =>
-                      setButtonVisibility('next_week', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('next_week')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('next_week')}
+                      onChange={(event) =>
+                        setButtonVisibility('next_week', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('next_week')}
@@ -380,17 +453,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.next_month')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('next_month')}
-                    onChange={(event) =>
-                      setButtonVisibility('next_month', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('next_month')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('next_month')}
+                      onChange={(event) =>
+                        setButtonVisibility('next_month', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('next_month')}
@@ -434,17 +510,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.someday')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('someday')}
-                    onChange={(event) =>
-                      setButtonVisibility('someday', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('someday')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('someday')}
+                      onChange={(event) =>
+                        setButtonVisibility('someday', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
               <fieldset
                 disabled={!isButtonVisible('someday')}
@@ -499,17 +578,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.custom_date_time')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('custom_date_time')}
-                    onChange={(event) =>
-                      setButtonVisibility('custom_date_time', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('custom_date_time')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('custom_date_time')}
+                      onChange={(event) =>
+                        setButtonVisibility('custom_date_time', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
             </section>
 
@@ -518,17 +600,20 @@ function DelaySettingsComponent({
                 <h3 className='text-base font-semibold'>
                   {t('settings.presetButtons.recurring')}
                 </h3>
-                <label className='label cursor-pointer gap-3 py-0'>
-                  <span className='label-text'>{t('settings.showButton')}</span>
-                  <input
-                    type='checkbox'
-                    className='toggle toggle-primary'
-                    checked={isButtonVisible('recurring')}
-                    onChange={(event) =>
-                      setButtonVisibility('recurring', event.target.checked)
-                    }
-                  />
-                </label>
+                <div className='flex items-center gap-3'>
+                  {renderPositionControl('recurring')}
+                  <label className='label cursor-pointer gap-3 py-0'>
+                    <span className='label-text'>{t('settings.showButton')}</span>
+                    <input
+                      type='checkbox'
+                      className='toggle toggle-primary'
+                      checked={isButtonVisible('recurring')}
+                      onChange={(event) =>
+                        setButtonVisibility('recurring', event.target.checked)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
             </section>
 
@@ -548,17 +633,20 @@ function DelaySettingsComponent({
                           index: index + 1,
                         })}
                     </h3>
-                    <label className='label cursor-pointer gap-3 py-0'>
-                      <span className='label-text'>{t('settings.showButton')}</span>
-                      <input
-                        type='checkbox'
-                        className='toggle toggle-primary'
-                        checked={isVisible}
-                        onChange={(event) =>
-                          setButtonVisibility(buttonId, event.target.checked)
-                        }
-                      />
-                    </label>
+                    <div className='flex items-center gap-3'>
+                      {renderPositionControl(buttonId)}
+                      <label className='label cursor-pointer gap-3 py-0'>
+                        <span className='label-text'>{t('settings.showButton')}</span>
+                        <input
+                          type='checkbox'
+                          className='toggle toggle-primary'
+                          checked={isVisible}
+                          onChange={(event) =>
+                            setButtonVisibility(buttonId, event.target.checked)
+                          }
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <fieldset

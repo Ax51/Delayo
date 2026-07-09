@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Link } from '@tanstack/react-router';
 import useDelaySettings from '@hooks/useDelaySettings';
 import useTabSelection from '@hooks/useTabSelection';
-import { DelayOption, TabSelectionMode } from '@types';
+import { DelayOption, PresetButtonId, TabSelectionMode } from '@types';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
 import { createPresetDelayOptions } from '@utils/delayPresets';
 import React, { useCallback, useMemo } from 'react';
@@ -44,19 +44,14 @@ function MainView(): React.ReactElement {
       }),
     [locale, settings, translate]
   );
-  const totalQuickActions = useMemo(() => {
-    let count = delayOptions.length;
-
-    if (settings.visiblePresetButtons.includes('custom_date_time')) {
-      count += 1;
-    }
-
-    if (settings.visiblePresetButtons.includes('recurring')) {
-      count += 1;
-    }
-
-    return count;
-  }, [delayOptions.length, settings.visiblePresetButtons]);
+  const delayOptionsById = useMemo(
+    () =>
+      new Map(
+        delayOptions.map((option) => [option.id as PresetButtonId, option] as const)
+      ),
+    [delayOptions]
+  );
+  const totalQuickActions = settings.visiblePresetButtons.length;
   const quickActionRows = Math.ceil(totalQuickActions / 3);
   const isCompactLayout = quickActionRows >= 4;
 
@@ -225,70 +220,82 @@ function MainView(): React.ReactElement {
         </div>
 
         <div className={`grid grid-cols-3 ${isCompactLayout ? 'gap-2' : 'gap-2.5'}`}>
-          {delayOptions.map((option) => (
-            <div key={option.id} className='card'>
-              <button
-                type='button'
-                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
-                onClick={() => void handleDelay(option)}
-              >
-                <FontAwesomeIcon
-                  icon={option.icon ?? 'clock'}
-                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
-                />
-                <span
-                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
-                >
-                  {option.label}
-                </span>
-              </button>
-            </div>
-          ))}
+          {settings.visiblePresetButtons.map((buttonId) => {
+            const option = delayOptionsById.get(buttonId);
 
-          {settings.visiblePresetButtons.includes('custom_date_time') && (
-            <div className='card'>
-              <Link
-                to='/custom-delay'
-                search={{ tabId: undefined }}
-                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
-                onClick={() => {
-                  void persistSelectedMode();
-                }}
-              >
-                <FontAwesomeIcon
-                  icon='calendar-days'
-                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
-                />
-                <span
-                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
-                >
-                  {t('popup.delayOptions.custom')}
-                </span>
-              </Link>
-            </div>
-          )}
+            if (option) {
+              return (
+                <div key={option.id} className='card'>
+                  <button
+                    type='button'
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    onClick={() => void handleDelay(option)}
+                  >
+                    <FontAwesomeIcon
+                      icon={option.icon ?? 'clock'}
+                      className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
+                    />
+                    <span
+                      className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                    >
+                      {option.label}
+                    </span>
+                  </button>
+                </div>
+              );
+            }
 
-          {settings.visiblePresetButtons.includes('recurring') && (
-            <div className='card'>
-              <Link
-                to='/recurring-delay'
-                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
-                onClick={() => {
-                  void persistSelectedMode();
-                }}
-              >
-                <FontAwesomeIcon
-                  icon='repeat'
-                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
-                />
-                <span
-                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
-                >
-                  {t('popup.delayOptions.recurring')}
-                </span>
-              </Link>
-            </div>
-          )}
+            if (buttonId === 'custom_date_time') {
+              return (
+                <div key={buttonId} className='card'>
+                  <Link
+                    to='/custom-delay'
+                    search={{ tabId: undefined }}
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    onClick={() => {
+                      void persistSelectedMode();
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon='calendar-days'
+                      className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
+                    />
+                    <span
+                      className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                    >
+                      {t('popup.delayOptions.custom')}
+                    </span>
+                  </Link>
+                </div>
+              );
+            }
+
+            if (buttonId === 'recurring') {
+              return (
+                <div key={buttonId} className='card'>
+                  <Link
+                    to='/recurring-delay'
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    onClick={() => {
+                      void persistSelectedMode();
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon='repeat'
+                      className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
+                    />
+                    <span
+                      className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                    >
+                      {t('popup.delayOptions.recurring')}
+                    </span>
+                  </Link>
+                </div>
+              );
+            }
+
+            return null;
+          })}
         </div>
 
         <div className={`flex justify-center ${isCompactLayout ? 'mt-4' : 'mt-6'}`}>

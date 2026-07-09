@@ -192,11 +192,11 @@ function ManageTabsView(): React.ReactElement {
                   key={tab.id}
                   className='flex items-center justify-between rounded-lg bg-base-100/70 p-4 shadow-sm transition-all duration-200 hover:bg-base-100'
                 >
-                  <div className='flex items-center'>
+                  <div className='mr-4 flex min-w-0 flex-1 items-center'>
                     {selectMode && (
                       <button
                         type='button'
-                        className='mr-3 cursor-pointer'
+                        className='mr-3 flex-shrink-0 cursor-pointer'
                         onClick={() => toggleSelectTab(tab.id)}
                         aria-label={t('manageTabs.toggleSelection')}
                       >
@@ -215,13 +215,13 @@ function ManageTabsView(): React.ReactElement {
                       <img
                         src={tab.favicon}
                         alt={t('common.faviconAlt')}
-                        className='mr-3 h-5 w-5 rounded-sm'
+                        className='mr-3 h-5 w-5 flex-shrink-0 rounded-sm'
                         onError={(event) => {
                           event.currentTarget.style.display = 'none';
                         }}
                       />
                     )}
-                    <div className='mr-4 max-w-[200px]'>
+                    <div className='min-w-0 flex-1'>
                       <div className='truncate text-sm font-medium text-base-content/80'>
                         {tab.title || t('manageTabs.untitledTab')}
                       </div>
@@ -246,7 +246,7 @@ function ManageTabsView(): React.ReactElement {
                     </div>
                   </div>
                   {!selectMode && (
-                    <div className='flex space-x-2'>
+                    <div className='flex flex-shrink-0 space-x-2'>
                       <button
                         type='button'
                         className='btn btn-sm'

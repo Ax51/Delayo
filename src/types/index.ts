@@ -37,6 +37,14 @@ export interface RecurrencePattern {
   endDate?: number;
 }
 
+export interface DelayedTabGroup {
+  id?: number;
+  windowId?: number;
+  title?: string;
+  color?: chrome.tabGroups.ColorEnum;
+  collapsed?: boolean;
+}
+
 export interface DelayedTab {
   id: string;
   url?: string;
@@ -47,6 +55,7 @@ export interface DelayedTab {
   status?: 'scheduled' | 'waking';
   isRecurring?: boolean;
   recurrencePattern?: RecurrencePattern;
+  group?: DelayedTabGroup;
 }
 
 export interface ScheduleTabsMessage {

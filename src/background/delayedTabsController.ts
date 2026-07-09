@@ -1,5 +1,6 @@
 import {
   DelayedTab,
+  DelayedTabGroup,
   DelayedTabsRuntimeResponse,
   RecurrencePattern,
 } from '@types';
@@ -12,6 +13,7 @@ const CONTEXT_MENU_ID = 'delay-tab';
 const ALARM_PREFIX = 'delayed-tab-';
 const NOTIFICATION_ICON_PATH = 'icons/icon128.png';
 const WAKE_NOTIFICATION_LEAD_TIME_MS = 3_000;
+const TAB_GROUP_ID_NONE = -1;
 
 type QueueJob<T> = () => Promise<T>;
 type DelayedTabStatus = NonNullable<DelayedTab['status']>;
@@ -59,6 +61,19 @@ function isValidDelayedTab(tab: Partial<DelayedTab>): tab is DelayedTab {
     Number.isFinite(tab.createdAt) &&
     typeof tab.wakeTime === 'number' &&
     Number.isFinite(tab.wakeTime)
+  );
+}
+
+function hasStoredTabGroup(
+  group?: DelayedTab['group']
+): group is DelayedTabGroup {
+  return Boolean(
+    group &&
+      (typeof group.id === 'number' ||
+        typeof group.windowId === 'number' ||
+        typeof group.title === 'string' ||
+        typeof group.color === 'string' ||
+        typeof group.collapsed === 'boolean')
   );
 }
 
@@ -222,7 +237,101 @@ export function createDelayedTabsController(
       await delay(WAKE_NOTIFICATION_LEAD_TIME_MS);
     }
 
-    await chromeApi.tabs.create({ url: tab.url });
+    const group = hasStoredTabGroup(tab.group) ? tab.group : undefined;
+    const targetWindowId = group?.windowId;
+    let openedTab: chrome.tabs.Tab;
+
+    if (typeof targetWindowId === 'number') {
+      try {
+        openedTab = await chromeApi.tabs.create({
+          url: tab.url,
+          windowId: targetWindowId,
+        });
+      } catch {
+        openedTab = await chromeApi.tabs.create({ url: tab.url });
+      }
+    } else {
+      openedTab = await chromeApi.tabs.create({ url: tab.url });
+    }
+
+    if (!openedTab.id || !group) {
+      return;
+    }
+
+    await restoreTabGroup(openedTab.id, group);
+  }
+
+  async function restoreTabGroup(
+    tabId: number,
+    group: DelayedTabGroup
+  ): Promise<void> {
+    try {
+      if (typeof group.id === 'number') {
+        await chromeApi.tabGroups.get(group.id);
+        await chromeApi.tabs.group({
+          groupId: group.id,
+          tabIds: [tabId],
+        });
+
+        return;
+      }
+    } catch {
+      // Fall through to recreate the group when the original no longer exists.
+    }
+
+    const groupId = await chromeApi.tabs.group({
+      createProperties:
+        typeof group.windowId === 'number'
+          ? { windowId: group.windowId }
+          : undefined,
+      tabIds: [tabId],
+    });
+
+    const updateProperties: chrome.tabGroups.UpdateProperties = {};
+
+    if (typeof group.title === 'string') {
+      updateProperties.title = group.title;
+    }
+
+    if (typeof group.color === 'string') {
+      updateProperties.color = group.color;
+    }
+
+    if (typeof group.collapsed === 'boolean') {
+      updateProperties.collapsed = group.collapsed;
+    }
+
+    if (Object.keys(updateProperties).length === 0) {
+      return;
+    }
+
+    await chromeApi.tabGroups.update(groupId, updateProperties);
+  }
+
+  async function captureTabGroup(
+    tab: chrome.tabs.Tab
+  ): Promise<DelayedTab['group']> {
+    if (
+      typeof tab.groupId !== 'number' ||
+      tab.groupId === TAB_GROUP_ID_NONE ||
+      !chromeApi.tabGroups?.get
+    ) {
+      return undefined;
+    }
+
+    try {
+      const group = await chromeApi.tabGroups.get(tab.groupId);
+
+      return {
+        id: group.id,
+        windowId: group.windowId,
+        title: group.title,
+        color: group.color,
+        collapsed: group.collapsed,
+      };
+    } catch {
+      return undefined;
+    }
   }
 
   async function reopenBrowserTabs(tabs: chrome.tabs.Tab[]): Promise<void> {
@@ -239,11 +348,11 @@ export function createDelayedTabsController(
     }
   }
 
-  function buildScheduledTab(
+  async function buildScheduledTab(
     tab: chrome.tabs.Tab,
     wakeTime: number,
     recurrencePattern?: RecurrencePattern
-  ): DelayedTab | null {
+  ): Promise<DelayedTab | null> {
     if (!tab.id || !tab.url) {
       return null;
     }
@@ -258,6 +367,7 @@ export function createDelayedTabsController(
       status: 'scheduled',
       isRecurring: Boolean(recurrencePattern),
       recurrencePattern,
+      group: await captureTabGroup(tab),
     };
   }
 
@@ -417,9 +527,12 @@ export function createDelayedTabsController(
   ): Promise<DelayedTabsRuntimeResponse> {
     return enqueue(async () => {
       const delayedTabs = await loadDelayedTabs();
-      const newDelayedTabs = tabs
-        .map((tab) => buildScheduledTab(tab, wakeTime, recurrencePattern))
-        .filter((tab): tab is DelayedTab => tab !== null);
+      const builtTabs = await Promise.all(
+        tabs.map((tab) => buildScheduledTab(tab, wakeTime, recurrencePattern))
+      );
+      const newDelayedTabs = builtTabs.filter(
+        (tab): tab is DelayedTab => tab !== null
+      );
 
       if (newDelayedTabs.length === 0) {
         return {

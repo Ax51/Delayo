@@ -6,7 +6,14 @@ const manifest: ManifestV3Export = {
   version: '1.1.2',
   description: '__MSG_appDesc__',
   default_locale: 'en',
-  permissions: ['storage', 'tabs', 'alarms', 'notifications', 'contextMenus'],
+  permissions: [
+    'storage',
+    'tabs',
+    'tabGroups',
+    'alarms',
+    'notifications',
+    'contextMenus',
+  ],
   action: {
     default_popup: 'public/html/popup.html',
     default_icon: {

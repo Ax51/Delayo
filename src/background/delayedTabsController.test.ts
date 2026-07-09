@@ -17,9 +17,12 @@ interface ChromeMock {
   getAlarmNames: () => string[];
   tabsCreate: ReturnType<typeof vi.fn>;
   tabsRemove: ReturnType<typeof vi.fn>;
+  tabsGroup: ReturnType<typeof vi.fn>;
   alarmsCreate: ReturnType<typeof vi.fn>;
   alarmsClear: ReturnType<typeof vi.fn>;
   notificationsCreate: ReturnType<typeof vi.fn>;
+  tabGroupsGet: ReturnType<typeof vi.fn>;
+  tabGroupsUpdate: ReturnType<typeof vi.fn>;
 }
 
 function createChromeMock(
@@ -38,7 +41,28 @@ function createChromeMock(
 
   const tabsCreate = vi.fn(async () => ({ id: 999 } as chrome.tabs.Tab));
   const tabsRemove = vi.fn(async () => undefined);
+  const tabsGroup = vi.fn(
+    async ({
+      groupId,
+    }: chrome.tabs.GroupOptions) => groupId ?? 456
+  );
   const notificationsCreate = vi.fn(async () => 'notification-id');
+  const tabGroupsGet = vi.fn(
+    async (groupId: number) =>
+      ({
+        id: groupId,
+        windowId: 321,
+        title: 'Work',
+        color: 'blue',
+        collapsed: true,
+      }) as chrome.tabGroups.TabGroup
+  );
+  const tabGroupsUpdate = vi.fn(
+    async (groupId: number) =>
+      ({
+        id: groupId,
+      }) as chrome.tabGroups.TabGroup
+  );
   const alarmsCreate = vi.fn(
     async (name: string, info: chrome.alarms.AlarmCreateInfo) => {
       alarms.set(name, {
@@ -74,6 +98,11 @@ function createChromeMock(
     tabs: {
       create: tabsCreate,
       remove: tabsRemove,
+      group: tabsGroup,
+    },
+    tabGroups: {
+      get: tabGroupsGet,
+      update: tabGroupsUpdate,
     },
     notifications: {
       create: notificationsCreate,
@@ -97,9 +126,12 @@ function createChromeMock(
     getAlarmNames: () => [...alarms.keys()],
     tabsCreate,
     tabsRemove,
+    tabsGroup,
     alarmsCreate,
     alarmsClear,
     notificationsCreate,
+    tabGroupsGet,
+    tabGroupsUpdate,
   };
 }
 
@@ -250,6 +282,90 @@ describe('delayedTabsController', () => {
       }),
     ]);
     expect(mock.getAlarmNames()).toContain(`delayed-tab-${futureTab.id}`);
+  });
+
+  it('stores the original tab group metadata when scheduling a grouped tab', async () => {
+    const browserTab = {
+      id: 123,
+      groupId: 77,
+      windowId: 321,
+      url: 'https://grouped.example',
+      title: 'Grouped',
+      favIconUrl: 'https://grouped.example/favicon.ico',
+    } as chrome.tabs.Tab;
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.scheduleTabs([browserTab], Date.now() + 60_000);
+
+    expect(mock.tabGroupsGet).toHaveBeenCalledWith(77);
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        group: {
+          id: 77,
+          windowId: 321,
+          title: 'Work',
+          color: 'blue',
+          collapsed: true,
+        },
+      }),
+    ]);
+  });
+
+  it('reopens a delayed tab back into its existing tab group', async () => {
+    const groupedTab = createDelayedTab({
+      group: {
+        id: 77,
+        windowId: 321,
+        title: 'Work',
+        color: 'blue',
+        collapsed: true,
+      },
+    });
+    const mock = createChromeMock([groupedTab], [`delayed-tab-${groupedTab.id}`]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.wakeTabs([groupedTab.id]);
+
+    expect(mock.tabsCreate).toHaveBeenCalledWith({
+      url: groupedTab.url,
+      windowId: 321,
+    });
+    expect(mock.tabGroupsGet).toHaveBeenCalledWith(77);
+    expect(mock.tabsGroup).toHaveBeenCalledWith({
+      groupId: 77,
+      tabIds: [999],
+    });
+    expect(mock.tabGroupsUpdate).not.toHaveBeenCalled();
+  });
+
+  it('recreates the tab group when the original group no longer exists', async () => {
+    const groupedTab = createDelayedTab({
+      group: {
+        id: 77,
+        windowId: 321,
+        title: 'Work',
+        color: 'blue',
+        collapsed: true,
+      },
+    });
+    const mock = createChromeMock([groupedTab], [`delayed-tab-${groupedTab.id}`]);
+    mock.tabGroupsGet.mockRejectedValueOnce(new Error('Group not found'));
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.wakeTabs([groupedTab.id]);
+
+    expect(mock.tabsGroup).toHaveBeenCalledWith({
+      createProperties: {
+        windowId: 321,
+      },
+      tabIds: [999],
+    });
+    expect(mock.tabGroupsUpdate).toHaveBeenCalledWith(456, {
+      title: 'Work',
+      color: 'blue',
+      collapsed: true,
+    });
   });
 
   it('keeps an overdue tab stored when reconcile fails to reopen it', async () => {

@@ -1,8 +1,30 @@
+import { IconProp } from '@fortawesome/fontawesome-svg-core';
+
 export const SUPPORTED_LANGUAGES = ['en', 'pt', 'es'] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export type TabSelectionMode = 'active' | 'highlighted' | 'window';
 export type ThemePreference = 'light' | 'dark';
+export type PresetButtonId =
+  | 'later_today'
+  | 'tonight'
+  | 'tomorrow'
+  | 'weekend'
+  | 'next_week'
+  | 'next_month'
+  | 'someday'
+  | 'custom_date_time'
+  | 'recurring'
+  | 'custom_1'
+  | 'custom_2'
+  | 'custom_3';
+
+export interface CustomDelayButtonSettings {
+  enabled: boolean;
+  label: string;
+  hours: number;
+  minutes: number;
+}
 
 export interface DelaySettings {
   laterToday: number;
@@ -17,11 +39,18 @@ export interface DelaySettings {
   nextMonthSameDay: boolean;
   somedayMinMonths: number;
   somedayMaxMonths: number;
+  visiblePresetButtons: PresetButtonId[];
+  customButtons: [
+    CustomDelayButtonSettings,
+    CustomDelayButtonSettings,
+    CustomDelayButtonSettings,
+  ];
 }
 
 export interface DelayOption {
   id: string;
   label: string;
+  icon?: IconProp;
   hours?: number;
   minutes?: number;
   days?: number;

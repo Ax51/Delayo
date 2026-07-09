@@ -212,23 +212,7 @@ function MainView(): React.ReactElement {
                 onClick={() => void handleDelay(option)}
               >
                 <FontAwesomeIcon
-                  icon={
-                    option.id === 'later_today'
-                      ? 'mug-hot'
-                      : option.id === 'tonight'
-                        ? 'moon'
-                        : option.id === 'tomorrow'
-                          ? 'cloud-sun'
-                          : option.id === 'weekend'
-                            ? 'couch'
-                            : option.id === 'next_week'
-                              ? 'briefcase'
-                              : option.id === 'next_month'
-                                ? 'envelope'
-                                : option.id === 'someday'
-                                  ? 'umbrella-beach'
-                                  : 'clock'
-                  }
+                  icon={option.icon ?? 'clock'}
                   className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
                 />
                 <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
@@ -238,42 +222,46 @@ function MainView(): React.ReactElement {
             </div>
           ))}
 
-          <div className='card'>
-            <Link
-              to='/custom-delay'
-              search={{ tabId: undefined }}
-              className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
-              onClick={() => {
-                void persistSelectedMode();
-              }}
-            >
-              <FontAwesomeIcon
-                icon='calendar-days'
-                className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
-              />
-              <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
-                {t('popup.delayOptions.custom')}
-              </span>
-            </Link>
-          </div>
+          {settings.visiblePresetButtons.includes('custom_date_time') && (
+            <div className='card'>
+              <Link
+                to='/custom-delay'
+                search={{ tabId: undefined }}
+                className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
+                onClick={() => {
+                  void persistSelectedMode();
+                }}
+              >
+                <FontAwesomeIcon
+                  icon='calendar-days'
+                  className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
+                />
+                <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
+                  {t('popup.delayOptions.custom')}
+                </span>
+              </Link>
+            </div>
+          )}
 
-          <div className='card'>
-            <Link
-              to='/recurring-delay'
-              className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
-              onClick={() => {
-                void persistSelectedMode();
-              }}
-            >
-              <FontAwesomeIcon
-                icon='repeat'
-                className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
-              />
-              <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
-                {t('popup.delayOptions.recurring')}
-              </span>
-            </Link>
-          </div>
+          {settings.visiblePresetButtons.includes('recurring') && (
+            <div className='card'>
+              <Link
+                to='/recurring-delay'
+                className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
+                onClick={() => {
+                  void persistSelectedMode();
+                }}
+              >
+                <FontAwesomeIcon
+                  icon='repeat'
+                  className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
+                />
+                <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
+                  {t('popup.delayOptions.recurring')}
+                </span>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className='mt-6 flex justify-center'>

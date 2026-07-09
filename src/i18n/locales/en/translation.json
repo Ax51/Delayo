@@ -114,6 +114,12 @@
     "notifications": "Notifications",
     "enableNotifications": "Enable Notifications",
     "defaultDelayOptions": "Default Delay Options",
+    "visibleButtons": "Visible Quick Buttons",
+    "customButtons": "Custom Quick Buttons",
+    "customButtonLabel": "Custom button {{index}}",
+    "showButton": "Show",
+    "showCustomButton": "Show",
+    "buttonName": "Button name",
     "laterToday": "Later Today",
     "hours": "hours",
     "minutes": "minutes",
@@ -129,6 +135,18 @@
     "someday": "Someday (random)",
     "minMonths": "Minimum months",
     "maxMonths": "Maximum months",
+    "presetButtons": {
+      "later_today": "Later Today",
+      "tonight": "Tonight",
+      "tomorrow": "Tomorrow",
+      "weekend": "This weekend",
+      "next_week": "Next week",
+      "next_month": "Next month",
+      "someday": "Someday",
+      "custom_date_time": "Custom date & time",
+      "recurring": "Recurring"
+    },
+    "selectAtLeastOneButton": "Select at least one quick button to save these settings.",
     "saved": "Settings saved successfully!"
   },
   "manageTabs": {

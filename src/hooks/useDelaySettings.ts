@@ -1,5 +1,5 @@
+import { defaultDelaySettings } from '@domain/delaySettings';
 import { DelaySettings } from '@types';
-import { defaultDelaySettings } from '@utils/extensionStorage';
 import {
   getDelaySettings,
   setDelaySettings,

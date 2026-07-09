@@ -114,6 +114,12 @@
     "notifications": "Notificações",
     "enableNotifications": "Ativar Notificações",
     "defaultDelayOptions": "Opções de Adiamento Padrão",
+    "visibleButtons": "Botoes rapidos visiveis",
+    "customButtons": "Botoes rapidos personalizados",
+    "customButtonLabel": "Botao personalizado {{index}}",
+    "showButton": "Mostrar",
+    "showCustomButton": "Mostrar",
+    "buttonName": "Nome do botao",
     "laterToday": "Hoje Mais Tarde",
     "hours": "horas",
     "minutes": "minutos",
@@ -129,6 +135,18 @@
     "someday": "Algum Dia (aleatório)",
     "minMonths": "Mínimo de meses",
     "maxMonths": "Máximo de meses",
+    "presetButtons": {
+      "later_today": "Hoje mais tarde",
+      "tonight": "Esta noite",
+      "tomorrow": "Amanhã",
+      "weekend": "Este fim de semana",
+      "next_week": "Próxima semana",
+      "next_month": "Próximo mês",
+      "someday": "Algum dia",
+      "custom_date_time": "Data e hora personalizada",
+      "recurring": "Recorrente"
+    },
+    "selectAtLeastOneButton": "Selecione pelo menos um botao rapido para salvar estas configuracoes.",
     "saved": "Configurações salvas com sucesso!"
   },
   "manageTabs": {

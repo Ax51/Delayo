@@ -1,6 +1,7 @@
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faArrowLeft,
+  faBolt,
   faBriefcase,
   faCalendarDays,
   faCheck,
@@ -21,8 +22,10 @@ import {
   faPenToSquare,
   faPlay,
   faRepeat,
+  faRocket,
   faSnowflake,
   faSquare,
+  faStopwatch,
   faSun,
   faTree,
   faTrashCan,
@@ -34,6 +37,7 @@ import {
 
 library.add(
   faArrowLeft,
+  faBolt,
   faBriefcase,
   faCalendarDays,
   faCheck,
@@ -54,8 +58,10 @@ library.add(
   faPenToSquare,
   faPlay,
   faRepeat,
+  faRocket,
   faSnowflake,
   faSquare,
+  faStopwatch,
   faSun,
   faTree,
   faTrashCan,

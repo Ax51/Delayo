@@ -1,8 +1,10 @@
-import { DelayOption, DelaySettings } from '@types';
+import { DelayOption, DelaySettings, PresetButtonId } from '@types';
 
 import { formatCalendarDate, formatClockTime } from './dateTime';
 
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
+
+const customButtonIds: PresetButtonId[] = ['custom_1', 'custom_2', 'custom_3'];
 
 const weekdayKeys = [
   'sunday',
@@ -248,10 +250,10 @@ export function createPresetDelayOptions(params: {
 }): DelayOption[] {
   const { locale, settings, translate } = params;
   const renderTime = new Date();
-
-  return [
+  const baseOptions: DelayOption[] = [
     {
       id: 'later_today',
+      icon: 'mug-hot',
       label: translate('popup.delayOptions.laterToday', {
         duration: getDurationLabel(
           settings.laterToday,
@@ -270,6 +272,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'tonight',
+      icon: 'moon',
       label: translate('popup.delayOptions.tonight', {
         time: settings.tonightTime,
       }),
@@ -279,6 +282,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'tomorrow',
+      icon: 'cloud-sun',
       label: translate('popup.delayOptions.tomorrow', {
         time: settings.tomorrowTime,
       }),
@@ -288,6 +292,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'weekend',
+      icon: 'couch',
       label: translate('popup.delayOptions.weekend', {
         day: translate(`popup.weekdays.${settings.weekendDay}`),
         time: settings.weekendTime,
@@ -302,6 +307,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'next_week',
+      icon: 'briefcase',
       label: translate('popup.delayOptions.nextWeek', {
         day: translate(
           `popup.weekdays.${
@@ -325,6 +331,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'next_month',
+      icon: 'envelope',
       label: getNextMonthLabel(settings, locale, translate, renderTime),
       custom: true,
       calculateTime: () =>
@@ -332,6 +339,7 @@ export function createPresetDelayOptions(params: {
     },
     {
       id: 'someday',
+      icon: 'umbrella-beach',
       label: translate('popup.delayOptions.someday'),
       custom: true,
       calculateTime: () =>
@@ -342,4 +350,26 @@ export function createPresetDelayOptions(params: {
         ),
     },
   ];
+
+  const customOptions: DelayOption[] = settings.customButtons.map(
+    (button, index) => ({
+      id: customButtonIds[index],
+      icon: index === 0 ? 'bolt' : index === 1 ? 'rocket' : 'stopwatch',
+      label: button.label,
+      hours: button.hours,
+      minutes: button.minutes,
+      calculateTime: () =>
+        calculateLaterTodayWakeTime(new Date(), button.hours, button.minutes),
+    })
+  );
+
+  const visiblePresetButtons = new Set(settings.visiblePresetButtons);
+
+  return [...baseOptions, ...customOptions].filter((option) => {
+    if (!visiblePresetButtons.has(option.id as PresetButtonId)) {
+      return false;
+    }
+
+    return true;
+  });
 }

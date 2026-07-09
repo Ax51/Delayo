@@ -54,6 +54,35 @@ describe('delayPresets', () => {
         nextMonthSameDay: true,
         somedayMinMonths: 3,
         somedayMaxMonths: 12,
+        visiblePresetButtons: [
+          'later_today',
+          'tonight',
+          'tomorrow',
+          'weekend',
+          'next_week',
+          'next_month',
+          'someday',
+        ],
+        customButtons: [
+          {
+            enabled: false,
+            label: 'In 1 hour',
+            hours: 1,
+            minutes: 0,
+          },
+          {
+            enabled: false,
+            label: 'In 3 hours',
+            hours: 3,
+            minutes: 0,
+          },
+          {
+            enabled: false,
+            label: 'Focus block',
+            hours: 0,
+            minutes: 45,
+          },
+        ],
       },
       translate: (key, values) => {
         if (key === 'popup.delayOptions.laterToday') {
@@ -90,5 +119,71 @@ describe('delayPresets', () => {
       'next_month',
       'someday',
     ]);
+  });
+
+  it('includes enabled custom preset buttons when they are configured to show', () => {
+    const options = createPresetDelayOptions({
+      locale: 'en',
+      settings: {
+        laterToday: 3,
+        laterTodayMinutes: 15,
+        tonightTime: '18:00',
+        tomorrowTime: '09:00',
+        weekendDay: 'saturday',
+        weekendTime: '09:00',
+        nextWeekSameDay: false,
+        nextWeekDay: 1,
+        nextWeekTime: '09:00',
+        nextMonthSameDay: true,
+        somedayMinMonths: 3,
+        somedayMaxMonths: 12,
+        visiblePresetButtons: ['later_today', 'custom_1'],
+        customButtons: [
+          {
+            enabled: true,
+            label: 'In 1 hour',
+            hours: 1,
+            minutes: 0,
+          },
+          {
+            enabled: false,
+            label: 'In 3 hours',
+            hours: 3,
+            minutes: 0,
+          },
+          {
+            enabled: false,
+            label: 'Focus block',
+            hours: 0,
+            minutes: 45,
+          },
+        ],
+      },
+      translate: (key, values) => {
+        if (key === 'popup.delayOptions.laterToday') {
+          return `In ${String(values?.duration)}`;
+        }
+
+        if (key === 'popup.delayDuration.hours') {
+          return `${String(values?.count)} hours`;
+        }
+
+        return `${key}${values ? JSON.stringify(values) : ''}`;
+      },
+    });
+
+    expect(options.map((option) => option.id)).toEqual([
+      'later_today',
+      'custom_1',
+    ]);
+    expect(options[1]).toEqual(
+      expect.objectContaining({
+        id: 'custom_1',
+        label: 'In 1 hour',
+        hours: 1,
+        minutes: 0,
+        icon: 'bolt',
+      })
+    );
   });
 });

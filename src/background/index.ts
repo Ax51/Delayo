@@ -91,6 +91,23 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  if (delayedTabsRequest.action === 'update-tab-time') {
+    void delayedTabsController
+      .updateTabTime(delayedTabsRequest.tabId, delayedTabsRequest.wakeTime)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to update delayed tab time',
+        } satisfies DelayedTabsRuntimeResponse);
+      });
+
+    return true;
+  }
+
   if (delayedTabsRequest.action === 'reconcile-delayed-tabs') {
     void delayedTabsController
       .reconcileDelayedTabs()

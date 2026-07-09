@@ -80,6 +80,7 @@
   },
   "customDelay": {
     "title": "Adiamento Personalizado",
+    "editTitle": "Editar adiamento",
     "selectDateTime": "Selecione Data e Hora",
     "delayFor": "Adiar por",
     "or": "ou",
@@ -89,7 +90,8 @@
       "hours": "Horas",
       "minutes": "Minutos"
     },
-    "delayTab": "Adiar Aba"
+    "delayTab": "Adiar Aba",
+    "updateTab": "Atualizar horario"
   },
   "recurringDelay": {
     "title": "Adiamento Recorrente",

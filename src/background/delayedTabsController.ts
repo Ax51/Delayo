@@ -131,6 +131,10 @@ export interface DelayedTabsController {
     recurrencePattern?: RecurrencePattern
   ) => Promise<DelayedTabsRuntimeResponse>;
   wakeTabs: (tabIds: string[]) => Promise<DelayedTabsRuntimeResponse>;
+  updateTabTime: (
+    tabId: string,
+    wakeTime: number
+  ) => Promise<DelayedTabsRuntimeResponse>;
   removeTabs: (tabIds: string[]) => Promise<DelayedTabsRuntimeResponse>;
   handleAlarm: (alarm: chrome.alarms.Alarm) => Promise<void>;
   reconcileDelayedTabs: () => Promise<DelayedTabsRuntimeResponse>;
@@ -597,6 +601,41 @@ export function createDelayedTabsController(
     });
   }
 
+  async function updateTabTime(
+    tabId: string,
+    wakeTime: number
+  ): Promise<DelayedTabsRuntimeResponse> {
+    return enqueue(async () => {
+      const delayedTabs = await loadDelayedTabs();
+      const targetTab = delayedTabs.find((tab) => tab.id === String(tabId));
+
+      if (!targetTab) {
+        throw new Error('Delayed tab not found');
+      }
+
+      const updatedTab: DelayedTab = {
+        ...targetTab,
+        wakeTime,
+        status: 'scheduled',
+      };
+      const updatedTabs = replaceTab(delayedTabs, targetTab.id, [updatedTab]);
+
+      await createAlarm(updatedTab);
+
+      try {
+        const persistedTabs = await saveDelayedTabs(updatedTabs);
+
+        return {
+          success: true,
+          delayedTabs: persistedTabs,
+        };
+      } catch (error) {
+        await createAlarm(targetTab);
+        throw error;
+      }
+    });
+  }
+
   async function handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
     const tabId = parseAlarmTabId(alarm.name);
 
@@ -660,6 +699,7 @@ export function createDelayedTabsController(
         notify: false,
         rescheduleRecurring: false,
       }),
+    updateTabTime,
     removeTabs,
     handleAlarm,
     reconcileDelayedTabs,

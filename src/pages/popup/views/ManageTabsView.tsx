@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import { DelayedTab } from '@types';
 import { formatDateTime, formatTimeLeft } from '@utils/dateTime';
@@ -14,6 +14,7 @@ function ManageTabsView(): React.ReactElement {
   const { delayedTabs, loading, removeDelayedTabs, wakeDelayedTabs } =
     useDelayedTabs();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
 
@@ -71,6 +72,13 @@ function ManageTabsView(): React.ReactElement {
   const removeSelectedTabs = async (): Promise<void> => {
     await removeDelayedTabs(selectedTabs);
     setSelectedTabs([]);
+  };
+
+  const editTab = async (tabId: string): Promise<void> => {
+    await navigate({
+      to: '/custom-delay',
+      search: { tabId },
+    });
   };
 
   if (loading) {
@@ -246,21 +254,34 @@ function ManageTabsView(): React.ReactElement {
                     </div>
                   </div>
                   {!selectMode && (
-                    <div className='flex flex-shrink-0 space-x-2'>
+                    <div className='flex flex-shrink-0 items-center space-x-1.5'>
                       <button
                         type='button'
-                        className='btn btn-sm'
-                        style={{ backgroundColor: '#ffb26f', color: '#3B1B00' }}
-                        onClick={() => void wakeTabNow(tab)}
+                        className='btn btn-circle btn-ghost btn-sm'
+                        onClick={() => void editTab(tab.id)}
+                        aria-label={t('common.edit')}
+                        title={t('common.edit')}
                       >
-                        {t('manageTabs.wakeUp')}
+                        <FontAwesomeIcon icon='pen-to-square' />
                       </button>
                       <button
                         type='button'
-                        className='btn btn-outline btn-error btn-sm'
-                        onClick={() => void removeTab(tab)}
+                        className='btn btn-circle btn-sm'
+                        style={{ backgroundColor: '#ffb26f', color: '#3B1B00' }}
+                        onClick={() => void wakeTabNow(tab)}
+                        aria-label={t('manageTabs.wakeUp')}
+                        title={t('manageTabs.wakeUp')}
                       >
-                        {t('manageTabs.remove')}
+                        <FontAwesomeIcon icon='play' />
+                      </button>
+                      <button
+                        type='button'
+                        className='btn btn-circle btn-outline btn-error btn-sm'
+                        onClick={() => void removeTab(tab)}
+                        aria-label={t('manageTabs.remove')}
+                        title={t('manageTabs.remove')}
+                      >
+                        <FontAwesomeIcon icon='trash-can' />
                       </button>
                     </div>
                   )}

@@ -41,6 +41,17 @@ export function wakeTabs(
   });
 }
 
+export function updateTabTime(
+  tabId: string,
+  wakeTime: number
+): Promise<DelayedTabsRuntimeResponse> {
+  return sendDelayedTabsMessage({
+    action: 'update-tab-time',
+    tabId,
+    wakeTime,
+  });
+}
+
 export function removeTabs(
   tabIds: string[]
 ): Promise<DelayedTabsRuntimeResponse> {

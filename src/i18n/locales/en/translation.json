@@ -80,6 +80,7 @@
   },
   "customDelay": {
     "title": "Custom Delay",
+    "editTitle": "Edit Delay",
     "selectDateTime": "Select Date & Time",
     "delayFor": "Delay For",
     "or": "or",
@@ -89,7 +90,8 @@
       "hours": "Hours",
       "minutes": "Minutes"
     },
-    "delayTab": "Delay Tab"
+    "delayTab": "Delay Tab",
+    "updateTab": "Update Time"
   },
   "recurringDelay": {
     "title": "Recurring Schedule",

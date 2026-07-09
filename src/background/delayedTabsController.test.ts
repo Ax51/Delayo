@@ -442,6 +442,42 @@ describe('delayedTabsController', () => {
     expect(storedTabs[0].url).toBe(browserTab.url);
   });
 
+  it('updates the wake time for an existing delayed tab', async () => {
+    const futureTab = createDelayedTab({
+      id: 'future-1',
+      wakeTime: Date.now() + 60_000,
+    });
+    const mock = createChromeMock([futureTab], [`delayed-tab-${futureTab.id}`]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const updatedWakeTime = Date.now() + 120_000;
+
+    const response = await controller.updateTabTime(futureTab.id, updatedWakeTime);
+
+    expect(response.success).toBe(true);
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        id: futureTab.id,
+        wakeTime: updatedWakeTime,
+        status: 'scheduled',
+      }),
+    ]);
+    expect(mock.alarmsCreate).toHaveBeenCalledWith(
+      `delayed-tab-${futureTab.id}`,
+      {
+        when: updatedWakeTime,
+      }
+    );
+  });
+
+  it('throws when updating a missing delayed tab', async () => {
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await expect(
+      controller.updateTabTime('missing-tab', Date.now() + 60_000)
+    ).rejects.toThrow('Delayed tab not found');
+  });
+
   it('reschedules recurring tabs with a new id after wake', async () => {
     const recurrencePattern: RecurrencePattern = {
       type: 'daily',

@@ -80,6 +80,7 @@
   },
   "customDelay": {
     "title": "Aplazamiento Personalizado",
+    "editTitle": "Editar aplazamiento",
     "selectDateTime": "Seleccionar Fecha y Hora",
     "delayFor": "Aplazar por",
     "or": "o",
@@ -89,7 +90,8 @@
       "hours": "Horas",
       "minutes": "Minutos"
     },
-    "delayTab": "Aplazar pestaña"
+    "delayTab": "Aplazar pestaña",
+    "updateTab": "Actualizar hora"
   },
   "recurringDelay": {
     "title": "Aplazamiento Recurrente",

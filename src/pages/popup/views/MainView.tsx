@@ -241,6 +241,7 @@ function MainView(): React.ReactElement {
           <div className='card'>
             <Link
               to='/custom-delay'
+              search={{ tabId: undefined }}
               className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
               onClick={() => {
                 void persistSelectedMode();

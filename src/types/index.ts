@@ -70,6 +70,12 @@ export interface WakeTabsMessage {
   tabIds: string[];
 }
 
+export interface UpdateTabTimeMessage {
+  action: 'update-tab-time';
+  tabId: string;
+  wakeTime: number;
+}
+
 export interface RemoveTabsMessage {
   action: 'remove-tabs';
   tabIds: string[];
@@ -82,6 +88,7 @@ export interface ReconcileDelayedTabsMessage {
 export type DelayedTabsRuntimeMessage =
   | ScheduleTabsMessage
   | WakeTabsMessage
+  | UpdateTabTimeMessage
   | RemoveTabsMessage
   | ReconcileDelayedTabsMessage;
 

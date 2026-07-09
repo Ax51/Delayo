@@ -1,6 +1,7 @@
 import { DelayedTab } from '@types';
 import {
   removeTabs,
+  updateTabTime,
   wakeTabs,
 } from '@utils/delayedTabsRuntime';
 import {
@@ -15,6 +16,7 @@ export default function useDelayedTabs(): {
   loading: boolean;
   refresh: () => Promise<void>;
   removeDelayedTabs: (tabIds: string[]) => Promise<void>;
+  updateDelayedTabTime: (tabId: string, wakeTime: number) => Promise<void>;
   wakeDelayedTabs: (tabIds: string[]) => Promise<void>;
 } {
   const [delayedTabs, setDelayedTabs] = useState<DelayedTab[]>([]);
@@ -54,11 +56,20 @@ export default function useDelayedTabs(): {
     []
   );
 
+  const updateDelayedTabTime = useCallback(
+    async (tabId: string, wakeTime: number): Promise<void> => {
+      const response = await updateTabTime(tabId, wakeTime);
+      setDelayedTabs(sortDelayedTabs(response.delayedTabs ?? []));
+    },
+    []
+  );
+
   return {
     delayedTabs,
     loading,
     refresh,
     removeDelayedTabs,
+    updateDelayedTabTime,
     wakeDelayedTabs,
   };
 }

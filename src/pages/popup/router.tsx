@@ -26,6 +26,9 @@ const mainRoute = createRoute({
 const customDelayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/custom-delay',
+  validateSearch: (search: Record<string, unknown>) => ({
+    tabId: typeof search.tabId === 'string' ? search.tabId : undefined,
+  }),
   component: CustomDelayView,
 });
 

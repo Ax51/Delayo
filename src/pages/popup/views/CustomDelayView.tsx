@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import useDelayedTabs from '@hooks/useDelayedTabs';
 import useTabSelection from '@hooks/useTabSelection';
 import type { RelativeDelayValues } from '@utils/dateTime';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
@@ -9,7 +10,7 @@ import {
   getMinimumCustomDelayDate,
   getRelativeDelayValues,
 } from '@utils/dateTime';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface RelativeDelayInputValues {
@@ -50,15 +51,19 @@ function isDateValid(date: Date): boolean {
 
 function CustomDelayView(): React.ReactElement {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { tabId } = useSearch({ from: '/custom-delay' });
   const {
     activeTab,
     allWindowTabs,
     highlightedTabs,
-    loading,
+    loading: tabSelectionLoading,
     persistSelectedMode,
     selectedMode,
     tabsToDelay,
   } = useTabSelection();
+  const { delayedTabs, loading: delayedTabsLoading, updateDelayedTabTime } =
+    useDelayedTabs();
   const initialDate = getMinimumCustomDelayDate(new Date());
   const [customDate, setCustomDate] = useState(
     formatDateTimeLocalInput(initialDate)
@@ -67,6 +72,12 @@ function CustomDelayView(): React.ReactElement {
     toRelativeDelayInputValues(getRelativeDelayValues(initialDate, new Date()))
   );
   const [dateError, setDateError] = useState<string | null>(null);
+  const [hasInitializedEditDate, setHasInitializedEditDate] = useState(false);
+  const editingTab = useMemo(
+    () => delayedTabs.find((tab) => tab.id === tabId),
+    [delayedTabs, tabId]
+  );
+  const isEditing = typeof tabId === 'string' && tabId.length > 0;
 
   const syncFromDate = (nextDate: Date): void => {
     const now = new Date();
@@ -79,6 +90,15 @@ function CustomDelayView(): React.ReactElement {
       toRelativeDelayInputValues(getRelativeDelayValues(normalizedDate, now))
     );
   };
+
+  useEffect(() => {
+    if (!isEditing || !editingTab || hasInitializedEditDate) {
+      return;
+    }
+
+    syncFromDate(new Date(editingTab.wakeTime));
+    setHasInitializedEditDate(true);
+  }, [editingTab, hasInitializedEditDate, isEditing]);
 
   const handleDateChange = (value: string): void => {
     setCustomDate(value);
@@ -140,10 +160,23 @@ function CustomDelayView(): React.ReactElement {
     const nextDate = new Date(customDate);
 
     if (
-      tabsToDelay.length === 0 ||
       !isDateValid(nextDate) ||
       nextDate.getTime() < getMinimumCustomDelayDate(new Date()).getTime()
     ) {
+      return;
+    }
+
+    if (isEditing) {
+      if (!editingTab) {
+        return;
+      }
+
+      await updateDelayedTabTime(editingTab.id, nextDate.getTime());
+      await navigate({ to: '/manage-tabs' });
+      return;
+    }
+
+    if (tabsToDelay.length === 0) {
       return;
     }
 
@@ -156,11 +189,12 @@ function CustomDelayView(): React.ReactElement {
   const isCustomDateValid = isDateValid(selectedDate);
   const minimumCustomDate = getMinimumCustomDelayDate(new Date());
   const canDelay =
-    tabsToDelay.length > 0 &&
+    (isEditing ? Boolean(editingTab) : tabsToDelay.length > 0) &&
     isCustomDateValid &&
     selectedDate.getTime() >= minimumCustomDate.getTime();
+  const isLoading = tabSelectionLoading || (isEditing && delayedTabsLoading);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='flex min-h-[300px] items-center justify-center'>
         <span className='loading loading-spinner loading-lg' />
@@ -173,23 +207,46 @@ function CustomDelayView(): React.ReactElement {
       <div className='card-body p-6'>
         <div className='mb-5 flex items-center'>
           <Link
-            to='/'
+            to={isEditing ? '/manage-tabs' : '/'}
             className='btn btn-circle btn-ghost btn-sm mr-3 transition-all duration-200 hover:bg-base-100'
             aria-label={t('common.back')}
           >
             <FontAwesomeIcon icon='arrow-left' />
           </Link>
           <h2 className='card-title font-bold text-delayo-orange'>
-            {t('customDelay.title')}
+            {isEditing ? t('customDelay.editTitle') : t('customDelay.title')}
           </h2>
         </div>
 
         <div className='mb-5'>
           <div className='mb-2 text-sm font-medium text-base-content/80'>
-            {t('popup.delay')}:
+            {isEditing ? `${t('common.edit')}:` : `${t('popup.delay')}:`}
           </div>
           <div className='rounded-lg bg-base-100/70 p-4 shadow-sm transition-all duration-200 hover:bg-base-100'>
-            {selectedMode === 'active' && activeTab && (
+            {isEditing && editingTab && (
+              <div className='flex items-center'>
+                {editingTab.favicon && (
+                  <img
+                    src={editingTab.favicon}
+                    alt={t('common.faviconAlt')}
+                    className='mr-3 h-5 w-5 rounded-sm'
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+                <div className='overflow-hidden'>
+                  <div className='truncate text-sm font-medium text-base-content/80'>
+                    {editingTab.title || editingTab.url || t('manageTabs.unknownTab')}
+                  </div>
+                  <div className='truncate text-xs text-base-content/60'>
+                    {editingTab.url}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!isEditing && selectedMode === 'active' && activeTab && (
               <div className='flex items-center'>
                 {activeTab.favIconUrl && (
                   <img
@@ -212,7 +269,7 @@ function CustomDelayView(): React.ReactElement {
               </div>
             )}
 
-            {selectedMode === 'highlighted' && (
+            {!isEditing && selectedMode === 'highlighted' && (
               <div className='text-sm font-medium text-base-content/80'>
                 {highlightedTabs.length}{' '}
                 {highlightedTabs.length === 1
@@ -222,7 +279,7 @@ function CustomDelayView(): React.ReactElement {
               </div>
             )}
 
-            {selectedMode === 'window' && (
+            {!isEditing && selectedMode === 'window' && (
               <div className='text-sm font-medium text-base-content/80'>
                 {allWindowTabs.length}{' '}
                 {allWindowTabs.length === 1
@@ -297,7 +354,7 @@ function CustomDelayView(): React.ReactElement {
             onClick={() => void handleDelay()}
             disabled={!canDelay}
           >
-            {t('customDelay.delayTab')}
+            {isEditing ? t('customDelay.updateTab') : t('customDelay.delayTab')}
           </button>
         </div>
       </div>

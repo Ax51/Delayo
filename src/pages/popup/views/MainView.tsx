@@ -44,6 +44,21 @@ function MainView(): React.ReactElement {
       }),
     [locale, settings, translate]
   );
+  const totalQuickActions = useMemo(() => {
+    let count = delayOptions.length;
+
+    if (settings.visiblePresetButtons.includes('custom_date_time')) {
+      count += 1;
+    }
+
+    if (settings.visiblePresetButtons.includes('recurring')) {
+      count += 1;
+    }
+
+    return count;
+  }, [delayOptions.length, settings.visiblePresetButtons]);
+  const quickActionRows = Math.ceil(totalQuickActions / 3);
+  const isCompactLayout = quickActionRows >= 4;
 
   const handleDelay = async (option: DelayOption): Promise<void> => {
     if (tabsToDelay.length === 0) {
@@ -83,8 +98,10 @@ function MainView(): React.ReactElement {
 
   return (
     <div className='card max-h-[600px] w-[40rem] overflow-hidden rounded-none bg-base-300 shadow-md'>
-      <div className='card-body p-6'>
-        <div className='mb-5 flex items-center justify-between'>
+      <div className={`card-body ${isCompactLayout ? 'p-5' : 'p-6'}`}>
+        <div
+          className={`flex items-center justify-between ${isCompactLayout ? 'mb-4' : 'mb-5'}`}
+        >
           <h2 className='card-title flex items-center font-bold text-delayo-orange'>
             <FontAwesomeIcon
               icon={faHourglassHalf}
@@ -129,7 +146,9 @@ function MainView(): React.ReactElement {
           </div>
         </div>
 
-        <div className='mb-5 flex flex-col space-y-3'>
+        <div
+          className={`flex flex-col ${isCompactLayout ? 'mb-4 space-y-2' : 'mb-5 space-y-3'}`}
+        >
           <div className='flex items-center justify-between'>
             <div className='text-sm font-medium text-base-content/80'>
               {t('popup.delay')}:
@@ -162,7 +181,9 @@ function MainView(): React.ReactElement {
             </div>
           </div>
 
-          <div className='rounded-lg bg-base-100/70 p-4 shadow-sm transition-all duration-200 hover:bg-base-100'>
+          <div
+            className={`rounded-lg bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'p-3' : 'p-4'}`}
+          >
             {selectedMode === 'active' && activeTab && (
               <div className='flex items-center'>
                 {activeTab.favIconUrl && (
@@ -203,19 +224,21 @@ function MainView(): React.ReactElement {
           </div>
         </div>
 
-        <div className='grid grid-cols-3 gap-2.5'>
+        <div className={`grid grid-cols-3 ${isCompactLayout ? 'gap-2' : 'gap-2.5'}`}>
           {delayOptions.map((option) => (
             <div key={option.id} className='card'>
               <button
                 type='button'
-                className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
+                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                 onClick={() => void handleDelay(option)}
               >
                 <FontAwesomeIcon
                   icon={option.icon ?? 'clock'}
-                  className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
+                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
                 />
-                <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
+                <span
+                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                >
                   {option.label}
                 </span>
               </button>
@@ -227,16 +250,18 @@ function MainView(): React.ReactElement {
               <Link
                 to='/custom-delay'
                 search={{ tabId: undefined }}
-                className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
+                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                 onClick={() => {
                   void persistSelectedMode();
                 }}
               >
                 <FontAwesomeIcon
                   icon='calendar-days'
-                  className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
+                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
                 />
-                <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
+                <span
+                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                >
                   {t('popup.delayOptions.custom')}
                 </span>
               </Link>
@@ -247,16 +272,18 @@ function MainView(): React.ReactElement {
             <div className='card'>
               <Link
                 to='/recurring-delay'
-                className='group btn h-24 flex-col items-center justify-center rounded-xl border-none bg-base-100/70 p-3 shadow-sm transition-all duration-200 hover:bg-base-100'
+                className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                 onClick={() => {
                   void persistSelectedMode();
                 }}
               >
                 <FontAwesomeIcon
                   icon='repeat'
-                  className='mb-3 h-5 w-5 transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange'
+                  className={`transform text-neutral-400 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-delayo-orange ${isCompactLayout ? 'mb-2 h-4 w-4' : 'mb-3 h-5 w-5'}`}
                 />
-                <span className='text-center text-xs font-medium text-base-content/80 group-hover:text-base-content'>
+                <span
+                  className={`text-center font-medium text-base-content/80 group-hover:text-base-content ${isCompactLayout ? 'text-[11px] leading-tight' : 'text-xs'}`}
+                >
                   {t('popup.delayOptions.recurring')}
                 </span>
               </Link>
@@ -264,7 +291,7 @@ function MainView(): React.ReactElement {
           )}
         </div>
 
-        <div className='mt-6 flex justify-center'>
+        <div className={`flex justify-center ${isCompactLayout ? 'mt-4' : 'mt-6'}`}>
           <Link
             to='/manage-tabs'
             className='btn btn-ghost btn-sm text-sm font-medium text-base-content/70 transition-all duration-200 hover:text-delayo-orange'

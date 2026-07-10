@@ -35,6 +35,7 @@
   "popup": {
     "title": "Delayo",
     "delay": "Delay",
+    "tabTitle": "Tab title",
     "selected": "selected",
     "inWindow": "in this window",
     "tabs": {
@@ -91,7 +92,8 @@
       "minutes": "Minutes"
     },
     "delayTab": "Delay Tab",
-    "updateTab": "Update Time"
+    "updateTab": "Update Time",
+    "tabTitle": "Tab title"
   },
   "recurringDelay": {
     "title": "Recurring Schedule",

@@ -6,7 +6,7 @@ import useTabSelection from '@hooks/useTabSelection';
 import { DelayOption, PresetButtonId, TabSelectionMode } from '@types';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
 import { createPresetDelayOptions } from '@utils/delayPresets';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../utils/useTheme';
@@ -27,6 +27,7 @@ function MainView(): React.ReactElement {
   } = useTabSelection();
 
   const loading = settingsLoading || tabsLoading;
+  const titleDraftRef = useRef('');
   const locale =
     i18n.language || document.documentElement.lang || navigator.language || 'en';
   const translate = useCallback(
@@ -55,6 +56,14 @@ function MainView(): React.ReactElement {
   const quickActionRows = Math.ceil(totalQuickActions / 3);
   const isCompactLayout = quickActionRows >= 4;
 
+  useEffect(() => {
+    if (tabsToDelay.length === 1) {
+      titleDraftRef.current = tabsToDelay[0].title ?? '';
+    } else {
+      titleDraftRef.current = '';
+    }
+  }, [tabsToDelay]);
+
   const handleDelay = async (option: DelayOption): Promise<void> => {
     if (tabsToDelay.length === 0) {
       return;
@@ -69,7 +78,16 @@ function MainView(): React.ReactElement {
         (option.minutes ? option.minutes * 60 * 1000 : 0) +
         (option.days ? option.days * 24 * 60 * 60 * 1000 : 0);
 
-    await scheduleTabs(tabsToDelay, wakeTime);
+    const tabsWithTitle =
+      tabsToDelay.length === 1 &&
+      titleDraftRef.current.trim() !== (tabsToDelay[0].title ?? '')
+        ? tabsToDelay.map((tab) => ({
+            ...tab,
+            title: titleDraftRef.current.trim(),
+          }))
+        : tabsToDelay;
+
+    await scheduleTabs(tabsWithTitle, wakeTime);
     window.close();
   };
 
@@ -191,8 +209,23 @@ function MainView(): React.ReactElement {
                     }}
                   />
                 )}
-                <div className='truncate text-sm font-medium text-base-content/80'>
-                  {activeTab.title}
+                <div
+                  className='min-w-0 flex-1 truncate text-sm font-medium text-base-content/80 outline-none'
+                  key={activeTab.id}
+                  contentEditable
+                  suppressContentEditableWarning
+                  role='textbox'
+                  aria-label={t('popup.tabTitle')}
+                  onFocus={(event) => {
+                    if (!titleDraftRef.current) {
+                      event.currentTarget.textContent = '';
+                    }
+                  }}
+                  onInput={(event) => {
+                    titleDraftRef.current = event.currentTarget.textContent ?? '';
+                  }}
+                >
+                  {activeTab.title || t('manageTabs.untitledTab')}
                 </div>
               </div>
             )}

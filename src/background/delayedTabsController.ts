@@ -135,6 +135,10 @@ export interface DelayedTabsController {
     tabId: string,
     wakeTime: number
   ) => Promise<DelayedTabsRuntimeResponse>;
+  updateTabTitle: (
+    tabId: string,
+    title: string
+  ) => Promise<DelayedTabsRuntimeResponse>;
   removeTabs: (tabIds: string[]) => Promise<DelayedTabsRuntimeResponse>;
   handleAlarm: (alarm: chrome.alarms.Alarm) => Promise<void>;
   reconcileDelayedTabs: () => Promise<DelayedTabsRuntimeResponse>;
@@ -636,6 +640,30 @@ export function createDelayedTabsController(
     });
   }
 
+  async function updateTabTitle(
+    tabId: string,
+    title: string
+  ): Promise<DelayedTabsRuntimeResponse> {
+    return enqueue(async () => {
+      const delayedTabs = await loadDelayedTabs();
+      const targetTab = delayedTabs.find((tab) => tab.id === String(tabId));
+
+      if (!targetTab) {
+        throw new Error('Delayed tab not found');
+      }
+
+      const updatedTab: DelayedTab = {
+        ...targetTab,
+        title: title.trim(),
+      };
+      const persistedTabs = await saveDelayedTabs(
+        replaceTab(delayedTabs, targetTab.id, [updatedTab])
+      );
+
+      return { success: true, delayedTabs: persistedTabs };
+    });
+  }
+
   async function handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
     const tabId = parseAlarmTabId(alarm.name);
 
@@ -700,6 +728,7 @@ export function createDelayedTabsController(
         rescheduleRecurring: false,
       }),
     updateTabTime,
+    updateTabTitle,
     removeTabs,
     handleAlarm,
     reconcileDelayedTabs,

@@ -478,6 +478,22 @@ describe('delayedTabsController', () => {
     ).rejects.toThrow('Delayed tab not found');
   });
 
+  it('updates the title for an existing delayed tab', async () => {
+    const delayedTab = createDelayedTab({
+      id: 'tab-title',
+      title: 'Original title',
+    });
+    const mock = createChromeMock([delayedTab], [`delayed-tab-${delayedTab.id}`]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    const response = await controller.updateTabTitle(
+      delayedTab.id,
+      '  Updated title  '
+    );
+
+    expect(response.delayedTabs?.[0].title).toBe('Updated title');
+  });
+
   it('reschedules recurring tabs with a new id after wake', async () => {
     const recurrencePattern: RecurrencePattern = {
       type: 'daily',

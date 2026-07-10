@@ -108,6 +108,23 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  if (delayedTabsRequest.action === 'update-tab-title') {
+    void delayedTabsController
+      .updateTabTitle(delayedTabsRequest.tabId, delayedTabsRequest.title)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to update delayed tab title',
+        } satisfies DelayedTabsRuntimeResponse);
+      });
+
+    return true;
+  }
+
   if (delayedTabsRequest.action === 'reconcile-delayed-tabs') {
     void delayedTabsController
       .reconcileDelayedTabs()

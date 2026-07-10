@@ -35,6 +35,7 @@
   "popup": {
     "title": "Delayo",
     "delay": "Aplazar",
+    "tabTitle": "Título de la pestaña",
     "selected": "seleccionadas",
     "inWindow": "en esta ventana",
     "tabs": {
@@ -91,7 +92,8 @@
       "minutes": "Minutos"
     },
     "delayTab": "Aplazar pestaña",
-    "updateTab": "Actualizar hora"
+    "updateTab": "Actualizar hora",
+    "tabTitle": "Título de la pestaña"
   },
   "recurringDelay": {
     "title": "Aplazamiento Recurrente",

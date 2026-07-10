@@ -11,7 +11,13 @@ import useTheme from '../../../utils/useTheme';
 
 function ManageTabsView(): React.ReactElement {
   const { t, i18n } = useTranslation();
-  const { delayedTabs, loading, removeDelayedTabs, wakeDelayedTabs } =
+  const {
+    delayedTabs,
+    loading,
+    removeDelayedTabs,
+    updateDelayedTabTitle,
+    wakeDelayedTabs,
+  } =
     useDelayedTabs();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -38,6 +44,17 @@ function ManageTabsView(): React.ReactElement {
   const removeTab = async (tab: DelayedTab): Promise<void> => {
     await removeDelayedTabs([tab.id]);
     setSelectedTabs((current) => current.filter((id) => id !== tab.id));
+  };
+
+  const saveTabTitle = async (
+    tab: DelayedTab,
+    element: HTMLDivElement
+  ): Promise<void> => {
+    const title = element.textContent?.trim() ?? '';
+
+    if (title !== (tab.title ?? '')) {
+      await updateDelayedTabTitle(tab.id, title);
+    }
   };
 
   const toggleSelectMode = (): void => {
@@ -230,9 +247,28 @@ function ManageTabsView(): React.ReactElement {
                       />
                     )}
                     <div className='min-w-0 flex-1'>
-                      <div className='truncate text-sm font-medium text-base-content/80'>
+                      <div
+                        className='truncate text-sm font-medium text-base-content/80 outline-none'
+                        contentEditable
+                        suppressContentEditableWarning
+                        role='textbox'
+                        aria-label={t('customDelay.tabTitle')}
+                        onFocus={(event) => {
+                          if (!tab.title) {
+                            event.currentTarget.textContent = '';
+                          }
+                        }}
+                        onBlur={(event) =>
+                          void saveTabTitle(tab, event.currentTarget)
+                        }
+                      >
                         {tab.title || t('manageTabs.untitledTab')}
                       </div>
+                      {tab.url && (
+                        <div className='truncate text-xs text-base-content/60'>
+                          {tab.url}
+                        </div>
+                      )}
                       {tab.group && (
                         <div className='mt-1'>
                           <span

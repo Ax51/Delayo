@@ -52,6 +52,17 @@ export function updateTabTime(
   });
 }
 
+export function updateTabTitle(
+  tabId: string,
+  title: string
+): Promise<DelayedTabsRuntimeResponse> {
+  return sendDelayedTabsMessage({
+    action: 'update-tab-title',
+    tabId,
+    title,
+  });
+}
+
 export function removeTabs(
   tabIds: string[]
 ): Promise<DelayedTabsRuntimeResponse> {

@@ -10,7 +10,7 @@ import {
   getMinimumCustomDelayDate,
   getRelativeDelayValues,
 } from '@utils/dateTime';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface RelativeDelayInputValues {
@@ -62,8 +62,12 @@ function CustomDelayView(): React.ReactElement {
     selectedMode,
     tabsToDelay,
   } = useTabSelection();
-  const { delayedTabs, loading: delayedTabsLoading, updateDelayedTabTime } =
-    useDelayedTabs();
+  const {
+    delayedTabs,
+    loading: delayedTabsLoading,
+    updateDelayedTabTime,
+    updateDelayedTabTitle,
+  } = useDelayedTabs();
   const initialDate = getMinimumCustomDelayDate(new Date());
   const [customDate, setCustomDate] = useState(
     formatDateTimeLocalInput(initialDate)
@@ -73,6 +77,9 @@ function CustomDelayView(): React.ReactElement {
   );
   const [dateError, setDateError] = useState<string | null>(null);
   const [hasInitializedEditDate, setHasInitializedEditDate] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const titleDraftRef = useRef('');
+  const savedTitleRef = useRef('');
   const editingTab = useMemo(
     () => delayedTabs.find((tab) => tab.id === tabId),
     [delayedTabs, tabId]
@@ -97,8 +104,37 @@ function CustomDelayView(): React.ReactElement {
     }
 
     syncFromDate(new Date(editingTab.wakeTime));
+    const initialTitle = editingTab.title ?? '';
+    titleDraftRef.current = initialTitle;
+    savedTitleRef.current = initialTitle;
+    setTitleDraft(initialTitle);
     setHasInitializedEditDate(true);
   }, [editingTab, hasInitializedEditDate, isEditing]);
+
+  useEffect(() => {
+    if (!isEditing && tabsToDelay.length === 1) {
+      const initialTitle = tabsToDelay[0].title ?? '';
+      titleDraftRef.current = initialTitle;
+      setTitleDraft(initialTitle);
+    }
+  }, [isEditing, tabsToDelay]);
+
+  const saveTitleOnBlur = (): void => {
+    const title = titleDraftRef.current.trim();
+    titleDraftRef.current = title;
+    setTitleDraft(title);
+
+    if (!isEditing || !editingTab || title === savedTitleRef.current) {
+      return;
+    }
+
+    const previousTitle = savedTitleRef.current;
+    savedTitleRef.current = title;
+
+    void updateDelayedTabTitle(editingTab.id, title).catch(() => {
+      savedTitleRef.current = previousTitle;
+    });
+  };
 
   const handleDateChange = (value: string): void => {
     setCustomDate(value);
@@ -181,7 +217,15 @@ function CustomDelayView(): React.ReactElement {
     }
 
     await persistSelectedMode();
-    await scheduleTabs(tabsToDelay, nextDate.getTime());
+    const tabsWithTitle =
+      tabsToDelay.length === 1
+        ? tabsToDelay.map((tab) => ({
+            ...tab,
+            title: titleDraftRef.current.trim(),
+          }))
+        : tabsToDelay;
+
+    await scheduleTabs(tabsWithTitle, nextDate.getTime());
     window.close();
   };
 
@@ -235,9 +279,25 @@ function CustomDelayView(): React.ReactElement {
                     }}
                   />
                 )}
-                <div className='overflow-hidden'>
-                  <div className='truncate text-sm font-medium text-base-content/80'>
-                    {editingTab.title || editingTab.url || t('manageTabs.unknownTab')}
+                <div className='min-w-0 overflow-hidden'>
+                  <div
+                    className='truncate text-sm font-medium text-base-content/80 outline-none'
+                    key={editingTab.id}
+                    contentEditable
+                    suppressContentEditableWarning
+                    role='textbox'
+                    aria-label={t('customDelay.tabTitle')}
+                    onFocus={(event) => {
+                      if (!titleDraftRef.current) {
+                        event.currentTarget.textContent = '';
+                      }
+                    }}
+                    onInput={(event) => {
+                      titleDraftRef.current = event.currentTarget.textContent ?? '';
+                    }}
+                    onBlur={saveTitleOnBlur}
+                  >
+                    {titleDraft || editingTab.url || t('manageTabs.unknownTab')}
                   </div>
                   <div className='truncate text-xs text-base-content/60'>
                     {editingTab.url}
@@ -258,9 +318,25 @@ function CustomDelayView(): React.ReactElement {
                     }}
                   />
                 )}
-                <div className='overflow-hidden'>
-                  <div className='truncate text-sm font-medium text-base-content/80'>
-                    {activeTab.title}
+                <div className='min-w-0 overflow-hidden'>
+                  <div
+                    className='truncate text-sm font-medium text-base-content/80 outline-none'
+                    key={activeTab.id}
+                    contentEditable
+                    suppressContentEditableWarning
+                    role='textbox'
+                    aria-label={t('customDelay.tabTitle')}
+                    onFocus={(event) => {
+                      if (!titleDraftRef.current) {
+                        event.currentTarget.textContent = '';
+                      }
+                    }}
+                    onInput={(event) => {
+                      titleDraftRef.current = event.currentTarget.textContent ?? '';
+                    }}
+                    onBlur={saveTitleOnBlur}
+                  >
+                    {titleDraft || t('manageTabs.untitledTab')}
                   </div>
                   <div className='truncate text-xs text-base-content/60'>
                     {activeTab.url}

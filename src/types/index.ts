@@ -105,6 +105,12 @@ export interface UpdateTabTimeMessage {
   wakeTime: number;
 }
 
+export interface UpdateTabTitleMessage {
+  action: 'update-tab-title';
+  tabId: string;
+  title: string;
+}
+
 export interface RemoveTabsMessage {
   action: 'remove-tabs';
   tabIds: string[];
@@ -118,6 +124,7 @@ export type DelayedTabsRuntimeMessage =
   | ScheduleTabsMessage
   | WakeTabsMessage
   | UpdateTabTimeMessage
+  | UpdateTabTitleMessage
   | RemoveTabsMessage
   | ReconcileDelayedTabsMessage;
 

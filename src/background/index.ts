@@ -38,6 +38,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   void delayedTabsController.handleAlarm(alarm);
 });
 
+chrome.notifications.onClicked.addListener((notificationId) => {
+  void delayedTabsController.handleNotificationClick(notificationId);
+});
+
+chrome.notifications.onClosed.addListener((notificationId) => {
+  void delayedTabsController.handleNotificationClosed(notificationId);
+});
+
 chrome.runtime.onStartup.addListener(() => {
   runBootstrapDelayedTabs();
 });

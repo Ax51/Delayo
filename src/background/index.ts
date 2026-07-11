@@ -58,7 +58,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       .scheduleTabs(
         delayedTabsRequest.tabs,
         delayedTabsRequest.wakeTime,
-        delayedTabsRequest.recurrencePattern
+        delayedTabsRequest.recurrencePattern,
+        delayedTabsRequest.remindOnly
       )
       .then(sendResponse)
       .catch((error: unknown) => {

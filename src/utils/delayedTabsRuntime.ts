@@ -22,13 +22,15 @@ async function sendDelayedTabsMessage(
 export function scheduleTabs(
   tabs: chrome.tabs.Tab[],
   wakeTime: number,
-  recurrencePattern?: RecurrencePattern
+  recurrencePattern?: RecurrencePattern,
+  remindOnly = false
 ): Promise<DelayedTabsRuntimeResponse> {
   return sendDelayedTabsMessage({
     action: 'schedule-tabs',
     tabs,
     wakeTime,
     recurrencePattern,
+    remindOnly,
   });
 }
 

@@ -84,6 +84,8 @@ export interface DelayedTab {
   status?: 'scheduled' | 'waking';
   isRecurring?: boolean;
   recurrencePattern?: RecurrencePattern;
+  remindOnly?: boolean;
+  sourceTabId?: number;
   group?: DelayedTabGroup;
 }
 
@@ -92,6 +94,7 @@ export interface ScheduleTabsMessage {
   tabs: chrome.tabs.Tab[];
   wakeTime: number;
   recurrencePattern?: RecurrencePattern;
+  remindOnly?: boolean;
 }
 
 export interface WakeTabsMessage {

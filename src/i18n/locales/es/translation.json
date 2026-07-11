@@ -35,6 +35,10 @@
   "popup": {
     "title": "Delayo",
     "delay": "Aplazar",
+    "reminder": {
+      "label": "Recordarme sin cerrar las pestañas",
+      "saved": "Recordatorio guardado. Tus pestañas seguirán abiertas."
+    },
     "tabTitle": "Título de la pestaña",
     "selected": "seleccionadas",
     "inWindow": "en esta ventana",

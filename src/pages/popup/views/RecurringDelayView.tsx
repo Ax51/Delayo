@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import useTabSelection from '@hooks/useTabSelection';
 import { RecurrencePattern } from '@types';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
@@ -24,6 +24,9 @@ function FormControl({
 
 function RecurringDelayView(): React.ReactElement {
   const { t } = useTranslation();
+  const { remindOnly } = useSearch({
+    from: '/recurring-delay',
+  });
   const patternId = useId();
   const timeId = useId();
   const daysOfWeekId = useId();
@@ -45,6 +48,7 @@ function RecurringDelayView(): React.ReactElement {
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [endDate, setEndDate] = useState('');
+  const [reminderSaved, setReminderSaved] = useState(false);
 
   const weekDays = useMemo(
     () => [
@@ -102,7 +106,14 @@ function RecurringDelayView(): React.ReactElement {
     }
 
     await persistSelectedMode();
-    await scheduleTabs(tabsToDelay, firstWakeTime, recurrencePattern);
+    await scheduleTabs(tabsToDelay, firstWakeTime, recurrencePattern, remindOnly);
+
+    if (remindOnly) {
+      setReminderSaved(true);
+      window.setTimeout(() => window.close(), 1_500);
+      return;
+    }
+
     window.close();
   };
 
@@ -120,6 +131,7 @@ function RecurringDelayView(): React.ReactElement {
         <div className='mb-4 flex items-center'>
           <Link
             to='/'
+            search={{ remindOnly }}
             className='btn btn-circle btn-ghost btn-sm mr-3 transition-all duration-200 hover:bg-base-100'
             aria-label={t('common.back')}
           >
@@ -265,13 +277,21 @@ function RecurringDelayView(): React.ReactElement {
             onClick={() => void handleDelay()}
             disabled={
               tabsToDelay.length === 0 ||
-              (recurrenceType === 'custom' && selectedDays.length === 0)
+              (recurrenceType === 'custom' && selectedDays.length === 0) ||
+              reminderSaved
             }
           >
             {t('recurringDelay.delayTab')}
           </button>
         </div>
       </div>
+      {reminderSaved && (
+        <div className='toast toast-top toast-center z-10'>
+          <div className='alert alert-success shadow-lg'>
+            <span>{t('popup.reminder.saved')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

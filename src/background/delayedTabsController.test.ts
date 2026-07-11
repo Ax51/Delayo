@@ -16,6 +16,7 @@ interface ChromeMock {
   getStoredTabs: () => DelayedTab[];
   getAlarmNames: () => string[];
   tabsCreate: ReturnType<typeof vi.fn>;
+  tabsGet: ReturnType<typeof vi.fn>;
   tabsUpdate: ReturnType<typeof vi.fn>;
   tabsRemove: ReturnType<typeof vi.fn>;
   tabsGroup: ReturnType<typeof vi.fn>;
@@ -28,6 +29,7 @@ interface ChromeMock {
   windowsUpdate: ReturnType<typeof vi.fn>;
   tabGroupsGet: ReturnType<typeof vi.fn>;
   tabGroupsUpdate: ReturnType<typeof vi.fn>;
+  setOpenTab: (tab: chrome.tabs.Tab) => void;
 }
 
 function createChromeMock(
@@ -36,6 +38,7 @@ function createChromeMock(
 ): ChromeMock {
   let storedTabs = [...initialTabs];
   let sessionStorage: Record<string, unknown> = {};
+  const openTabs = new Map<number, chrome.tabs.Tab>();
   const alarms = new Map<string, chrome.alarms.Alarm>();
 
   for (const name of initialAlarmNames) {
@@ -45,9 +48,20 @@ function createChromeMock(
     } as chrome.alarms.Alarm);
   }
 
-  const tabsCreate = vi.fn(
-    async () => ({ id: 999, windowId: 321 }) as chrome.tabs.Tab
-  );
+  const tabsCreate = vi.fn(async () => {
+    const tab = { id: 999, windowId: 321 } as chrome.tabs.Tab;
+    openTabs.set(999, tab);
+    return tab;
+  });
+  const tabsGet = vi.fn(async (tabId: number) => {
+    const tab = openTabs.get(tabId);
+
+    if (!tab) {
+      throw new Error('Tab not found');
+    }
+
+    return tab;
+  });
   const tabsUpdate = vi.fn(
     async (tabId: number) => ({ id: tabId, windowId: 321 }) as chrome.tabs.Tab
   );
@@ -136,6 +150,7 @@ function createChromeMock(
     },
     tabs: {
       create: tabsCreate,
+      get: tabsGet,
       update: tabsUpdate,
       remove: tabsRemove,
       group: tabsGroup,
@@ -171,6 +186,7 @@ function createChromeMock(
     getStoredTabs: () => storedTabs,
     getAlarmNames: () => [...alarms.keys()],
     tabsCreate,
+    tabsGet,
     tabsUpdate,
     tabsRemove,
     tabsGroup,
@@ -183,6 +199,11 @@ function createChromeMock(
     windowsUpdate,
     tabGroupsGet,
     tabGroupsUpdate,
+    setOpenTab: (tab) => {
+      if (typeof tab.id === 'number') {
+        openTabs.set(tab.id, tab);
+      }
+    },
   };
 }
 
@@ -296,8 +317,7 @@ describe('delayedTabsController', () => {
         type: 'basic',
         iconUrl: 'chrome-extension://delayo/icons/icon128.png',
         title: 'Tab Waking Up',
-        message:
-          'Your delayed tab "Example" is opening in the background. Click to view it.',
+        message: 'Your delayed tab "Example" is ready. Click to view it.',
         priority: 2,
         requireInteraction: true,
       }
@@ -713,6 +733,85 @@ describe('delayedTabsController', () => {
     expect(mock.getStoredTabs()).toEqual([]);
     expect(mock.tabsRemove).not.toHaveBeenCalled();
     expect(mock.getAlarmNames()).toEqual([]);
+  });
+
+  it('keeps a tab open when scheduling a reminder', async () => {
+    const browserTab = {
+      id: 123,
+      windowId: 321,
+      url: 'https://example.com',
+      title: 'Example',
+    } as chrome.tabs.Tab;
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.scheduleTabs([browserTab], Date.now() + 60_000, undefined, true);
+
+    expect(mock.tabsRemove).not.toHaveBeenCalled();
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        remindOnly: true,
+        sourceTabId: browserTab.id,
+      }),
+    ]);
+  });
+
+  it('notifies about an open reminder tab without reopening it', async () => {
+    const reminderTab = createDelayedTab({
+      remindOnly: true,
+      sourceTabId: 123,
+    });
+    const mock = createChromeMock(
+      [reminderTab],
+      [`delayed-tab-${reminderTab.id}`]
+    );
+    mock.setOpenTab({
+      id: 123,
+      windowId: 321,
+      url: reminderTab.url,
+      title: reminderTab.title,
+    } as chrome.tabs.Tab);
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.handleAlarm({
+      name: `delayed-tab-${reminderTab.id}`,
+      scheduledTime: reminderTab.wakeTime,
+    } as chrome.alarms.Alarm);
+
+    expect(mock.tabsGet).toHaveBeenCalledWith(123);
+    expect(mock.tabsCreate).not.toHaveBeenCalled();
+    expect(mock.notificationsCreate).toHaveBeenCalledTimes(1);
+
+    await controller.handleNotificationClick(`delayed-tab-wake-${reminderTab.id}`);
+
+    expect(mock.tabsUpdate).toHaveBeenCalledWith(123, { active: true });
+  });
+
+  it('reopens a reminder tab that was closed before its alarm', async () => {
+    const reminderTab = createDelayedTab({
+      remindOnly: true,
+      sourceTabId: 123,
+    });
+    const mock = createChromeMock(
+      [reminderTab],
+      [`delayed-tab-${reminderTab.id}`]
+    );
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.handleAlarm({
+      name: `delayed-tab-${reminderTab.id}`,
+      scheduledTime: reminderTab.wakeTime,
+    } as chrome.alarms.Alarm);
+
+    expect(mock.tabsGet).toHaveBeenCalledWith(123);
+    expect(mock.tabsCreate).toHaveBeenCalledWith({
+      url: reminderTab.url,
+      active: false,
+    });
+
+    await controller.handleNotificationClick(`delayed-tab-wake-${reminderTab.id}`);
+
+    expect(mock.tabsUpdate).toHaveBeenCalledWith(999, { active: true });
   });
 
   it('clears created alarms and avoids persistence when closing tabs fails during schedule', async () => {

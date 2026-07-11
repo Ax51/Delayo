@@ -94,7 +94,7 @@ function ManageTabsView(): React.ReactElement {
   const editTab = async (tabId: string): Promise<void> => {
     await navigate({
       to: '/custom-delay',
-      search: { tabId },
+      search: { tabId, remindOnly: false },
     });
   };
 
@@ -113,6 +113,7 @@ function ManageTabsView(): React.ReactElement {
           <div className='flex items-center'>
             <Link
               to='/'
+              search={{ remindOnly: false }}
               className='btn btn-circle btn-ghost btn-sm mr-3 transition-all duration-200 hover:bg-base-100'
               aria-label={t('common.back')}
             >

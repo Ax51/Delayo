@@ -20,6 +20,9 @@ const rootRoute = createRootRoute({
 const mainRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: (search: Record<string, unknown>) => ({
+    remindOnly: search.remindOnly === true,
+  }),
   component: MainView,
 });
 
@@ -28,6 +31,7 @@ const customDelayRoute = createRoute({
   path: '/custom-delay',
   validateSearch: (search: Record<string, unknown>) => ({
     tabId: typeof search.tabId === 'string' ? search.tabId : undefined,
+    remindOnly: search.remindOnly === true,
   }),
   component: CustomDelayView,
 });
@@ -35,6 +39,9 @@ const customDelayRoute = createRoute({
 const recurringDelayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/recurring-delay',
+  validateSearch: (search: Record<string, unknown>) => ({
+    remindOnly: search.remindOnly === true,
+  }),
   component: RecurringDelayView,
 });
 

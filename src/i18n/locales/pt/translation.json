@@ -35,6 +35,10 @@
   "popup": {
     "title": "Delayo",
     "delay": "Adiar",
+    "reminder": {
+      "label": "Lembrar sem fechar as abas",
+      "saved": "Lembrete salvo. Suas abas permanecerão abertas."
+    },
     "tabTitle": "Título da aba",
     "selected": "selecionadas",
     "inWindow": "na janela",

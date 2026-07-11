@@ -35,6 +35,10 @@
   "popup": {
     "title": "Delayo",
     "delay": "Delay",
+    "reminder": {
+      "label": "Remind me without closing tabs",
+      "saved": "Reminder saved. Your tabs will stay open."
+    },
     "tabTitle": "Tab title",
     "selected": "selected",
     "inWindow": "in this window",

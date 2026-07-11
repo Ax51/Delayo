@@ -52,7 +52,9 @@ function isDateValid(date: Date): boolean {
 function CustomDelayView(): React.ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { tabId } = useSearch({ from: '/custom-delay' });
+  const { remindOnly, tabId } = useSearch({
+    from: '/custom-delay',
+  });
   const {
     activeTab,
     allWindowTabs,
@@ -77,6 +79,7 @@ function CustomDelayView(): React.ReactElement {
   );
   const [dateError, setDateError] = useState<string | null>(null);
   const [hasInitializedEditDate, setHasInitializedEditDate] = useState(false);
+  const [reminderSaved, setReminderSaved] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const titleDraftRef = useRef('');
   const savedTitleRef = useRef('');
@@ -225,7 +228,14 @@ function CustomDelayView(): React.ReactElement {
           }))
         : tabsToDelay;
 
-    await scheduleTabs(tabsWithTitle, nextDate.getTime());
+    await scheduleTabs(tabsWithTitle, nextDate.getTime(), undefined, remindOnly);
+
+    if (remindOnly) {
+      setReminderSaved(true);
+      window.setTimeout(() => window.close(), 1_500);
+      return;
+    }
+
     window.close();
   };
 
@@ -252,6 +262,7 @@ function CustomDelayView(): React.ReactElement {
         <div className='mb-5 flex items-center'>
           <Link
             to={isEditing ? '/manage-tabs' : '/'}
+            search={isEditing ? undefined : { remindOnly }}
             className='btn btn-circle btn-ghost btn-sm mr-3 transition-all duration-200 hover:bg-base-100'
             aria-label={t('common.back')}
           >
@@ -428,12 +439,19 @@ function CustomDelayView(): React.ReactElement {
             type='button'
             className='btn btn-primary border-none shadow-sm transition-all duration-200 hover:shadow'
             onClick={() => void handleDelay()}
-            disabled={!canDelay}
+            disabled={!canDelay || reminderSaved}
           >
             {isEditing ? t('customDelay.updateTab') : t('customDelay.delayTab')}
           </button>
         </div>
       </div>
+      {reminderSaved && (
+        <div className='toast toast-top toast-center z-10'>
+          <div className='alert alert-success shadow-lg'>
+            <span>{t('popup.reminder.saved')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

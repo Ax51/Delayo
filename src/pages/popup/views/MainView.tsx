@@ -1,18 +1,19 @@
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import useDelaySettings from '@hooks/useDelaySettings';
 import useTabSelection from '@hooks/useTabSelection';
 import { DelayOption, PresetButtonId, TabSelectionMode } from '@types';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
 import { createPresetDelayOptions } from '@utils/delayPresets';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../utils/useTheme';
 
 function MainView(): React.ReactElement {
   const { i18n, t } = useTranslation();
+  const { remindOnly: initialRemindOnly } = useSearch({ from: '/' });
   const { theme, toggleTheme } = useTheme();
   const { loading: settingsLoading, settings } = useDelaySettings();
   const {
@@ -28,6 +29,8 @@ function MainView(): React.ReactElement {
 
   const loading = settingsLoading || tabsLoading;
   const titleDraftRef = useRef('');
+  const [remindOnly, setRemindOnly] = useState(initialRemindOnly);
+  const [reminderSaved, setReminderSaved] = useState(false);
   const locale =
     i18n.language || document.documentElement.lang || navigator.language || 'en';
   const translate = useCallback(
@@ -87,7 +90,14 @@ function MainView(): React.ReactElement {
           }))
         : tabsToDelay;
 
-    await scheduleTabs(tabsWithTitle, wakeTime);
+    await scheduleTabs(tabsWithTitle, wakeTime, undefined, remindOnly);
+
+    if (remindOnly) {
+      setReminderSaved(true);
+      window.setTimeout(() => window.close(), 1_500);
+      return;
+    }
+
     window.close();
   };
 
@@ -123,6 +133,18 @@ function MainView(): React.ReactElement {
             Delayo
           </h2>
           <div className='flex items-center space-x-2'>
+            <label
+              className='tooltip tooltip-bottom flex cursor-pointer items-center'
+              data-tip={t('popup.reminder.label')}
+            >
+              <input
+                type='checkbox'
+                className='toggle toggle-primary toggle-sm'
+                checked={remindOnly}
+                onChange={(event) => setRemindOnly(event.target.checked)}
+                aria-label={t('popup.reminder.label')}
+              />
+            </label>
             <button
               type='button'
               className='btn btn-circle btn-ghost btn-sm transition-all duration-200 hover:bg-base-100'
@@ -250,6 +272,7 @@ function MainView(): React.ReactElement {
               </div>
             )}
           </div>
+
         </div>
 
         <div className={`grid grid-cols-3 ${isCompactLayout ? 'gap-2' : 'gap-2.5'}`}>
@@ -263,6 +286,7 @@ function MainView(): React.ReactElement {
                     type='button'
                     className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                     onClick={() => void handleDelay(option)}
+                    disabled={reminderSaved}
                   >
                     <FontAwesomeIcon
                       icon={option.icon ?? 'clock'}
@@ -283,7 +307,7 @@ function MainView(): React.ReactElement {
                 <div key={buttonId} className='card'>
                   <Link
                     to='/custom-delay'
-                    search={{ tabId: undefined }}
+                    search={{ tabId: undefined, remindOnly }}
                     className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                     onClick={() => {
                       void persistSelectedMode();
@@ -308,6 +332,7 @@ function MainView(): React.ReactElement {
                 <div key={buttonId} className='card'>
                   <Link
                     to='/recurring-delay'
+                    search={{ remindOnly }}
                     className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
                     onClick={() => {
                       void persistSelectedMode();
@@ -341,6 +366,13 @@ function MainView(): React.ReactElement {
           </Link>
         </div>
       </div>
+      {reminderSaved && (
+        <div className='toast toast-top toast-center z-10'>
+          <div className='alert alert-success shadow-lg'>
+            <span>{t('popup.reminder.saved')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

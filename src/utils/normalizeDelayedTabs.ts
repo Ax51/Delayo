@@ -4,6 +4,11 @@ export default function normalizeDelayedTabs(tabs: DelayedTab[]): DelayedTab[] {
   return tabs.map((tab) => ({
     ...tab,
     id: String(tab.id),
+    remindOnly: tab.remindOnly === true,
+    sourceTabId:
+      typeof tab.sourceTabId === 'number' && Number.isFinite(tab.sourceTabId)
+        ? tab.sourceTabId
+        : undefined,
     group: tab.group
       ? {
           ...tab.group,

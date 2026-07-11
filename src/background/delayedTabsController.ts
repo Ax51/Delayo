@@ -158,7 +158,8 @@ export interface DelayedTabsController {
   scheduleTabs: (
     tabs: chrome.tabs.Tab[],
     wakeTime: number,
-    recurrencePattern?: RecurrencePattern
+    recurrencePattern?: RecurrencePattern,
+    remindOnly?: boolean
   ) => Promise<DelayedTabsRuntimeResponse>;
   wakeTabs: (tabIds: string[]) => Promise<DelayedTabsRuntimeResponse>;
   updateTabTime: (
@@ -294,46 +295,67 @@ export function createDelayedTabsController(
     }
   }
 
-  async function openTab(
-    tab: DelayedTab,
-    { notify }: Pick<WakeOptions, 'notify'>
+  async function createWakeNotification(tab: DelayedTab): Promise<string | null> {
+    try {
+      const permissionLevel = await getNotificationPermissionLevel(chromeApi);
+
+      if (permissionLevel === 'denied') {
+        throw new Error('Notification permission is denied');
+      }
+
+      const notificationId = `${NOTIFICATION_PREFIX}${tab.id}`;
+
+      await chromeApi.notifications.create(notificationId, {
+        type: 'basic',
+        iconUrl: getNotificationIconUrl(chromeApi),
+        title: 'Tab Waking Up',
+        message: `Your ${tab.isRecurring ? 'recurring' : 'delayed'} tab "${tab.title}" is ready. Click to view it.`,
+        priority: 2,
+        requireInteraction: true,
+      });
+
+      const notifications = await getNotifications(chromeApi);
+
+      if (!(notificationId in notifications)) {
+        throw new Error('Wake notification was not registered by Chrome');
+      }
+
+      return notificationId;
+    } catch (error) {
+      // Notification failures should not roll back the wake flow.
+      console.warn('Failed to show wake notification:', error);
+      return null;
+    }
+  }
+
+  async function saveWakeNotificationTargetSafely(
+    notificationId: string | null,
+    openedTab: chrome.tabs.Tab
   ): Promise<void> {
-    if (!tab.url) {
+    if (!notificationId || !openedTab.id) {
       return;
     }
 
-    let wakeNotificationId: string | null = null;
-
-    if (notify) {
-      try {
-        const permissionLevel = await getNotificationPermissionLevel(chromeApi);
-
-        if (permissionLevel === 'denied') {
-          throw new Error('Notification permission is denied');
-        }
-
-        const notificationId = `${NOTIFICATION_PREFIX}${tab.id}`;
-        wakeNotificationId = notificationId;
-
-        await chromeApi.notifications.create(notificationId, {
-          type: 'basic',
-          iconUrl: getNotificationIconUrl(chromeApi),
-          title: 'Tab Waking Up',
-          message: `Your ${tab.isRecurring ? 'recurring' : 'delayed'} tab "${tab.title}" is opening in the background. Click to view it.`,
-          priority: 2,
-          requireInteraction: true,
-        });
-
-        const notifications = await getNotifications(chromeApi);
-
-        if (!(notificationId in notifications)) {
-          throw new Error('Wake notification was not registered by Chrome');
-        }
-      } catch (error) {
-        // Notification failures should not roll back the wake flow.
-        console.warn('Failed to show wake notification:', error);
-      }
+    try {
+      await saveWakeNotificationTarget(notificationId, {
+        tabId: openedTab.id,
+        windowId: openedTab.windowId,
+      });
+    } catch (error) {
+      // A missing click target should not roll back an already opened tab.
+      console.warn('Failed to save wake notification target:', error);
     }
+  }
+
+  async function openTab(
+    tab: DelayedTab,
+    { notify }: Pick<WakeOptions, 'notify'>
+  ): Promise<chrome.tabs.Tab | null> {
+    if (!tab.url) {
+      return null;
+    }
+
+    const wakeNotificationId = notify ? await createWakeNotification(tab) : null;
 
     const group = hasStoredTabGroup(tab.group) ? tab.group : undefined;
     const targetWindowId = group?.windowId;
@@ -356,23 +378,18 @@ export function createDelayedTabsController(
       openedTab = await chromeApi.tabs.create(createProperties);
     }
 
-    if (wakeNotificationId && openedTab.id) {
-      try {
-        await saveWakeNotificationTarget(wakeNotificationId, {
-          tabId: openedTab.id,
-          windowId: openedTab.windowId ?? targetWindowId,
-        });
-      } catch (error) {
-        // A missing click target should not roll back an already opened tab.
-        console.warn('Failed to save wake notification target:', error);
-      }
-    }
+    await saveWakeNotificationTargetSafely(wakeNotificationId, {
+      ...openedTab,
+      windowId: openedTab.windowId ?? targetWindowId,
+    });
 
     if (!openedTab.id || !group) {
-      return;
+      return openedTab;
     }
 
     await restoreTabGroup(openedTab.id, group);
+
+    return openedTab;
   }
 
   async function restoreTabGroup(
@@ -465,7 +482,8 @@ export function createDelayedTabsController(
   async function buildScheduledTab(
     tab: chrome.tabs.Tab,
     wakeTime: number,
-    recurrencePattern?: RecurrencePattern
+    recurrencePattern?: RecurrencePattern,
+    remindOnly = false
   ): Promise<DelayedTab | null> {
     if (!tab.id || !tab.url) {
       return null;
@@ -481,11 +499,16 @@ export function createDelayedTabsController(
       status: 'scheduled',
       isRecurring: Boolean(recurrencePattern),
       recurrencePattern,
+      remindOnly,
+      sourceTabId: remindOnly ? tab.id : undefined,
       group: await captureTabGroup(tab),
     };
   }
 
-  function buildRecurringReschedule(tab: DelayedTab): DelayedTab | null {
+  function buildRecurringReschedule(
+    tab: DelayedTab,
+    sourceTabId?: number
+  ): DelayedTab | null {
     if (!tab.isRecurring || !tab.recurrencePattern) {
       return null;
     }
@@ -502,7 +525,36 @@ export function createDelayedTabsController(
       wakeTime: nextWakeTime,
       status: 'scheduled',
       isRecurring: true,
+      sourceTabId: tab.remindOnly ? sourceTabId ?? tab.sourceTabId : undefined,
     };
+  }
+
+  async function notifyExistingTab(
+    tab: DelayedTab,
+    existingTab: chrome.tabs.Tab,
+    notify: boolean
+  ): Promise<chrome.tabs.Tab> {
+    const notificationId = notify ? await createWakeNotification(tab) : null;
+    await saveWakeNotificationTargetSafely(notificationId, existingTab);
+
+    return existingTab;
+  }
+
+  async function wakeReminderOrOpenTab(
+    tab: DelayedTab,
+    notify: boolean
+  ): Promise<chrome.tabs.Tab | null> {
+    if (tab.remindOnly && typeof tab.sourceTabId === 'number') {
+      try {
+        const existingTab = await chromeApi.tabs.get(tab.sourceTabId);
+
+        return notifyExistingTab(tab, existingTab, notify);
+      } catch {
+        // The source tab was closed, so recreate it below.
+      }
+    }
+
+    return openTab(tab, { notify });
   }
 
   async function processWakeTarget(
@@ -515,9 +567,10 @@ export function createDelayedTabsController(
     let workingTabs = await saveDelayedTabs(
       replaceTab(currentTabs, originalTab.id, [wakingTab])
     );
+    let wokenTab: chrome.tabs.Tab | null;
 
     try {
-      await openTab(originalTab, { notify: options.notify });
+      wokenTab = await wakeReminderOrOpenTab(originalTab, options.notify);
     } catch {
       return saveDelayedTabs(replaceTab(workingTabs, originalTab.id, [originalTab]));
     }
@@ -527,7 +580,7 @@ export function createDelayedTabsController(
     let createdRecurringAlarmId: string | null = null;
 
     if (options.rescheduleRecurring) {
-      const rescheduledTab = buildRecurringReschedule(originalTab);
+      const rescheduledTab = buildRecurringReschedule(originalTab, wokenTab?.id);
 
       if (rescheduledTab) {
         try {
@@ -637,12 +690,15 @@ export function createDelayedTabsController(
   async function scheduleTabs(
     tabs: chrome.tabs.Tab[],
     wakeTime: number,
-    recurrencePattern?: RecurrencePattern
+    recurrencePattern?: RecurrencePattern,
+    remindOnly = false
   ): Promise<DelayedTabsRuntimeResponse> {
     return enqueue(async () => {
       const delayedTabs = await loadDelayedTabs();
       const builtTabs = await Promise.all(
-        tabs.map((tab) => buildScheduledTab(tab, wakeTime, recurrencePattern))
+        tabs.map((tab) =>
+          buildScheduledTab(tab, wakeTime, recurrencePattern, remindOnly)
+        )
       );
       const newDelayedTabs = builtTabs.filter(
         (tab): tab is DelayedTab => tab !== null
@@ -664,13 +720,15 @@ export function createDelayedTabsController(
           createdAlarmIds.push(delayedTab.id);
         }
 
-        for (const tab of tabs) {
-          if (!tab.id || !tab.url) {
-            continue;
-          }
+        if (!remindOnly) {
+          for (const tab of tabs) {
+            if (!tab.id || !tab.url) {
+              continue;
+            }
 
-          await chromeApi.tabs.remove(tab.id);
-          removedTabs.push(tab);
+            await chromeApi.tabs.remove(tab.id);
+            removedTabs.push(tab);
+          }
         }
 
         const persistedTabs = await saveDelayedTabs(delayedTabs.concat(newDelayedTabs));

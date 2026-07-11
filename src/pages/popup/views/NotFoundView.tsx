@@ -54,7 +54,7 @@ function NotFoundView(): React.ReactElement {
             {t('popup.notFound.description')}
           </p>
           <div className='mt-6'>
-            <Link to='/' className='btn btn-primary'>
+            <Link to='/' search={{ remindOnly: false }} className='btn btn-primary'>
               {t('popup.notFound.backHome')}
             </Link>
           </div>

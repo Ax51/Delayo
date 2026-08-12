@@ -378,72 +378,80 @@ function CustomDelayView(): React.ReactElement {
           </div>
         </div>
 
-        <div className='form-control'>
-          <label className='label'>
-            <span className='label-text font-medium'>
-              {t('customDelay.selectDateTime')}
-            </span>
-          </label>
-          <input
-            type='datetime-local'
-            className={`input input-bordered w-full border-none bg-base-100/50 shadow-sm transition-all duration-200 focus:bg-base-100/80 ${dateError ? 'input-error' : ''}`}
-            value={customDate}
-            onChange={(event) => handleDateChange(event.target.value)}
-            onBlur={handleDateBlur}
-            min={formatDateTimeLocalInput(minimumCustomDate)}
-          />
-          {dateError && (
-            <span className='mt-2 text-xs text-error'>{dateError}</span>
-          )}
-        </div>
-
-        <div className='my-4 flex items-center gap-3'>
-          <div className='h-px flex-1 bg-base-content/10' />
-          <span className='text-xs font-medium uppercase tracking-wide text-base-content/50'>
-            {t('customDelay.or')}
-          </span>
-          <div className='h-px flex-1 bg-base-content/10' />
-        </div>
-
-        <div>
-          <label className='label'>
-            <span className='label-text font-medium'>
-              {t('customDelay.delayFor')}
-            </span>
-          </label>
-          <div className='grid grid-cols-3 gap-2'>
-            {relativeDelayFields.map((field) => (
-              <label key={field} className='form-control'>
-                <span className='mb-2 text-xs font-medium text-base-content/70'>
-                  {t(`customDelay.relative.${field}`)}
-                </span>
-                <input
-                  type='number'
-                  min='0'
-                  inputMode='numeric'
-                  className='input input-bordered w-full border-none bg-base-100/50 text-center shadow-sm transition-all duration-200 focus:bg-base-100/80'
-                  value={relativeDelay[field]}
-                  onFocus={(event) => event.currentTarget.select()}
-                  onClick={(event) => event.currentTarget.select()}
-                  onChange={(event) =>
-                    handleRelativeDelayChange(field, event.target.value)
-                  }
-                />
-              </label>
-            ))}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleDelay();
+          }}
+        >
+          <div className='form-control'>
+            <label className='label'>
+              <span className='label-text font-medium'>
+                {t('customDelay.selectDateTime')}
+              </span>
+            </label>
+            <input
+              type='datetime-local'
+              className={`input input-bordered w-full border-none bg-base-100/50 shadow-sm transition-all duration-200 focus:bg-base-100/80 ${dateError ? 'input-error' : ''}`}
+              value={customDate}
+              onChange={(event) => handleDateChange(event.target.value)}
+              onBlur={handleDateBlur}
+              min={formatDateTimeLocalInput(minimumCustomDate)}
+            />
+            {dateError && (
+              <span className='mt-2 text-xs text-error'>{dateError}</span>
+            )}
           </div>
-        </div>
 
-        <div className='card-actions mt-6 justify-end'>
-          <button
-            type='button'
-            className='btn btn-primary border-none shadow-sm transition-all duration-200 hover:shadow'
-            onClick={() => void handleDelay()}
-            disabled={!canDelay || reminderSaved}
-          >
-            {isEditing ? t('customDelay.updateTab') : t('customDelay.delayTab')}
-          </button>
-        </div>
+          <div className='my-4 flex items-center gap-3'>
+            <div className='h-px flex-1 bg-base-content/10' />
+            <span className='text-xs font-medium uppercase tracking-wide text-base-content/50'>
+              {t('customDelay.or')}
+            </span>
+            <div className='h-px flex-1 bg-base-content/10' />
+          </div>
+
+          <div>
+            <label className='label'>
+              <span className='label-text font-medium'>
+                {t('customDelay.delayFor')}
+              </span>
+            </label>
+            <div className='grid grid-cols-3 gap-2'>
+              {relativeDelayFields.map((field) => (
+                <label key={field} className='form-control'>
+                  <span className='mb-2 text-xs font-medium text-base-content/70'>
+                    {t(`customDelay.relative.${field}`)}
+                  </span>
+                  <input
+                    type='number'
+                    min='0'
+                    inputMode='numeric'
+                    className='input input-bordered w-full border-none bg-base-100/50 text-center shadow-sm transition-all duration-200 focus:bg-base-100/80'
+                    value={relativeDelay[field]}
+                    onFocus={(event) => event.currentTarget.select()}
+                    onClick={(event) => event.currentTarget.select()}
+                    onChange={(event) =>
+                      handleRelativeDelayChange(field, event.target.value)
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className='card-actions mt-6 justify-end'>
+            <button
+              type='submit'
+              className='btn btn-primary border-none shadow-sm transition-all duration-200 hover:shadow'
+              disabled={!canDelay || reminderSaved}
+            >
+              {isEditing
+                ? t('customDelay.updateTab')
+                : t('customDelay.delayTab')}
+            </button>
+          </div>
+        </form>
       </div>
       {reminderSaved && (
         <div className='toast toast-top toast-center z-10'>

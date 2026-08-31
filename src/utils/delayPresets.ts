@@ -91,13 +91,8 @@ export function calculateNextWeekWakeTime(
   const { hours, minutes } = parseTimeString(timeString);
   const targetDay = nextWeekSameDay ? now.getDay() : nextWeekDay;
   const currentDay = now.getDay();
-  let daysUntilTarget = 7;
-
-  if (currentDay < targetDay) {
-    daysUntilTarget = targetDay - currentDay + 7;
-  } else if (currentDay > targetDay) {
-    daysUntilTarget = 7 - (currentDay - targetDay) + 7;
-  }
+  const dayDifference = (targetDay - currentDay + 7) % 7;
+  const daysUntilTarget = dayDifference === 0 ? 7 : dayDifference;
 
   const targetDate = new Date(now);
   targetDate.setDate(now.getDate() + daysUntilTarget);

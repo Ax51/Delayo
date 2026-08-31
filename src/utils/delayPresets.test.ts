@@ -30,6 +30,27 @@ describe('delayPresets', () => {
     expect(wakeDate.getMinutes()).toBe(45);
   });
 
+  it('uses the upcoming configured weekday instead of skipping a week', () => {
+    const friday = new Date(2026, 2, 20, 16, 30);
+
+    const wakeTime = calculateNextWeekWakeTime(
+      friday,
+      false,
+      1,
+      '12:00'
+    );
+
+    expect(wakeTime).toBe(new Date(2026, 2, 23, 12, 0).getTime());
+  });
+
+  it('uses the same weekday in the following week', () => {
+    const monday = new Date(2026, 2, 23, 8, 30);
+
+    const wakeTime = calculateNextWeekWakeTime(monday, true, 1, '12:00');
+
+    expect(wakeTime).toBe(new Date(2026, 2, 30, 12, 0).getTime());
+  });
+
   it('clamps next month to the last valid day when needed', () => {
     const now = new Date(2026, 0, 31, 8, 30);
 

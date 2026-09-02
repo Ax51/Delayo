@@ -173,6 +173,7 @@
     "selectMode": "Activar modo de selección múltiple",
     "cancelSelection": "Cancelar selección",
     "wakeUp": "Despertar",
+    "openWithoutRemoving": "Abrir sin eliminar",
     "remove": "Eliminar",
     "untitledTab": "Pestaña sin título",
     "unknownTab": "Pestaña desconocida",

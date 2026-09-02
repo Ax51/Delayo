@@ -44,7 +44,8 @@ function parseAlarmTabId(alarmName: string): string | null {
 
 function getNotificationIconUrl(chromeApi: typeof chrome): string {
   return (
-    chromeApi.runtime?.getURL?.(NOTIFICATION_ICON_PATH) ?? NOTIFICATION_ICON_PATH
+    chromeApi.runtime?.getURL?.(NOTIFICATION_ICON_PATH) ??
+    NOTIFICATION_ICON_PATH
   );
 }
 
@@ -295,7 +296,9 @@ export function createDelayedTabsController(
     }
   }
 
-  async function createWakeNotification(tab: DelayedTab): Promise<string | null> {
+  async function createWakeNotification(
+    tab: DelayedTab
+  ): Promise<string | null> {
     try {
       const permissionLevel = await getNotificationPermissionLevel(chromeApi);
 
@@ -355,7 +358,9 @@ export function createDelayedTabsController(
       return null;
     }
 
-    const wakeNotificationId = notify ? await createWakeNotification(tab) : null;
+    const wakeNotificationId = notify
+      ? await createWakeNotification(tab)
+      : null;
 
     const group = hasStoredTabGroup(tab.group) ? tab.group : undefined;
     const targetWindowId = group?.windowId;
@@ -525,7 +530,9 @@ export function createDelayedTabsController(
       wakeTime: nextWakeTime,
       status: 'scheduled',
       isRecurring: true,
-      sourceTabId: tab.remindOnly ? sourceTabId ?? tab.sourceTabId : undefined,
+      sourceTabId: tab.remindOnly
+        ? (sourceTabId ?? tab.sourceTabId)
+        : undefined,
     };
   }
 
@@ -572,7 +579,9 @@ export function createDelayedTabsController(
     try {
       wokenTab = await wakeReminderOrOpenTab(originalTab, options.notify);
     } catch {
-      return saveDelayedTabs(replaceTab(workingTabs, originalTab.id, [originalTab]));
+      return saveDelayedTabs(
+        replaceTab(workingTabs, originalTab.id, [originalTab])
+      );
     }
 
     let replacementTabs: DelayedTab[] = [];
@@ -580,7 +589,10 @@ export function createDelayedTabsController(
     let createdRecurringAlarmId: string | null = null;
 
     if (options.rescheduleRecurring) {
-      const rescheduledTab = buildRecurringReschedule(originalTab, wokenTab?.id);
+      const rescheduledTab = buildRecurringReschedule(
+        originalTab,
+        wokenTab?.id
+      );
 
       if (rescheduledTab) {
         try {
@@ -594,7 +606,11 @@ export function createDelayedTabsController(
       }
     }
 
-    const finalizedTabs = replaceTab(workingTabs, originalTab.id, replacementTabs);
+    const finalizedTabs = replaceTab(
+      workingTabs,
+      originalTab.id,
+      replacementTabs
+    );
 
     try {
       workingTabs = await saveDelayedTabs(finalizedTabs);
@@ -609,7 +625,9 @@ export function createDelayedTabsController(
         await clearAlarms([createdRecurringAlarmId]);
       }
 
-      return saveDelayedTabs(replaceTab(workingTabs, originalTab.id, [originalTab]));
+      return saveDelayedTabs(
+        replaceTab(workingTabs, originalTab.id, [originalTab])
+      );
     }
   }
 
@@ -625,7 +643,9 @@ export function createDelayedTabsController(
       let currentTabs = delayedTabs;
 
       for (const tab of tabsToWake) {
-        const latestTab = currentTabs.find((currentTab) => currentTab.id === tab.id);
+        const latestTab = currentTabs.find(
+          (currentTab) => currentTab.id === tab.id
+        );
 
         if (!latestTab) {
           continue;
@@ -711,13 +731,57 @@ export function createDelayedTabsController(
         };
       }
 
-      const createdAlarmIds: string[] = [];
+      const existingTabsByUrl = new Map<string, DelayedTab>();
+
+      for (const delayedTab of delayedTabs) {
+        if (delayedTab.url && !existingTabsByUrl.has(delayedTab.url)) {
+          existingTabsByUrl.set(delayedTab.url, delayedTab);
+        }
+      }
+
+      const scheduledTabsByUrl = new Map<string, DelayedTab>();
+
+      for (const newDelayedTab of newDelayedTabs) {
+        if (!newDelayedTab.url) {
+          continue;
+        }
+
+        const existingTab = existingTabsByUrl.get(newDelayedTab.url);
+
+        scheduledTabsByUrl.set(
+          newDelayedTab.url,
+          existingTab
+            ? {
+                ...newDelayedTab,
+                id: existingTab.id,
+                createdAt: existingTab.createdAt,
+              }
+            : newDelayedTab
+        );
+      }
+
+      const scheduledTabs = [...scheduledTabsByUrl.values()];
+      const scheduledUrls = new Set(scheduledTabsByUrl.keys());
+      const replacedTabs = delayedTabs.filter(
+        (delayedTab) => delayedTab.url && scheduledUrls.has(delayedTab.url)
+      );
+      const retainedTabs = delayedTabs.filter(
+        (delayedTab) => !delayedTab.url || !scheduledUrls.has(delayedTab.url)
+      );
+      const scheduledTabIds = new Set(scheduledTabs.map((tab) => tab.id));
+      const supersededTabIds = replacedTabs
+        .filter((tab) => !scheduledTabIds.has(tab.id))
+        .map((tab) => tab.id);
+      const originalTabsById = new Map(
+        replacedTabs.map((tab) => [tab.id, tab] as const)
+      );
+      const updatedAlarmIds: string[] = [];
       const removedTabs: chrome.tabs.Tab[] = [];
 
       try {
-        for (const delayedTab of newDelayedTabs) {
+        for (const delayedTab of scheduledTabs) {
           await createAlarm(delayedTab);
-          createdAlarmIds.push(delayedTab.id);
+          updatedAlarmIds.push(delayedTab.id);
         }
 
         if (!remindOnly) {
@@ -731,15 +795,30 @@ export function createDelayedTabsController(
           }
         }
 
-        const persistedTabs = await saveDelayedTabs(delayedTabs.concat(newDelayedTabs));
+        const persistedTabs = await saveDelayedTabs(
+          retainedTabs.concat(scheduledTabs)
+        );
+
+        try {
+          await clearAlarms(supersededTabIds);
+        } catch (error) {
+          // Reconciliation will remove orphaned alarms left by older duplicates.
+          console.warn('Failed to clear superseded delayed tab alarms:', error);
+        }
 
         return {
           success: true,
           delayedTabs: persistedTabs,
         };
       } catch (error) {
-        if (createdAlarmIds.length > 0) {
-          await clearAlarms(createdAlarmIds);
+        for (const tabId of updatedAlarmIds) {
+          const originalTab = originalTabsById.get(tabId);
+
+          if (originalTab) {
+            await createAlarm(originalTab);
+          } else {
+            await clearAlarms([tabId]);
+          }
         }
 
         if (removedTabs.length > 0) {

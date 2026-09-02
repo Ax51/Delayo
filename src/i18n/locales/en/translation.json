@@ -173,6 +173,7 @@
     "selectMode": "Enable multiple selection mode",
     "cancelSelection": "Cancel selection",
     "wakeUp": "Wake Up",
+    "openWithoutRemoving": "Open without removing",
     "remove": "Remove",
     "untitledTab": "Untitled tab",
     "unknownTab": "Unknown tab",

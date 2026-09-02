@@ -1,13 +1,6 @@
 import { DelayedTab, RecurrencePattern } from '@types';
 import { calculateNextWakeTime } from '@utils/recurrence';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDelayedTabsController } from './delayedTabsController';
 
@@ -67,9 +60,7 @@ function createChromeMock(
   );
   const tabsRemove = vi.fn(async () => undefined);
   const tabsGroup = vi.fn(
-    async ({
-      groupId,
-    }: chrome.tabs.GroupOptions) => groupId ?? 456
+    async ({ groupId }: chrome.tabs.GroupOptions) => groupId ?? 456
   );
   const notifications = new Set<string>();
   const notificationsCreate = vi.fn(async (notificationId: string) => {
@@ -207,9 +198,7 @@ function createChromeMock(
   };
 }
 
-function createDelayedTab(
-  overrides: Partial<DelayedTab> = {}
-): DelayedTab {
+function createDelayedTab(overrides: Partial<DelayedTab> = {}): DelayedTab {
   return {
     id: 'tab-1',
     url: 'https://example.com',
@@ -235,7 +224,10 @@ describe('delayedTabsController', () => {
 
   it('opens an overdue tab only once when reconcile and alarm overlap', async () => {
     const overdueTab = createDelayedTab();
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     const wakePromise = Promise.all([
@@ -253,7 +245,10 @@ describe('delayedTabsController', () => {
 
   it('opens an overdue tab only once when manual wake and alarm overlap', async () => {
     const overdueTab = createDelayedTab();
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     await Promise.all([
@@ -269,7 +264,10 @@ describe('delayedTabsController', () => {
   });
 
   it('wakes two overdue tabs without duplicating or losing state', async () => {
-    const firstTab = createDelayedTab({ id: 'tab-1', url: 'https://one.example' });
+    const firstTab = createDelayedTab({
+      id: 'tab-1',
+      url: 'https://one.example',
+    });
     const secondTab = createDelayedTab({
       id: 'tab-2',
       url: 'https://two.example',
@@ -301,7 +299,10 @@ describe('delayedTabsController', () => {
     const overdueTab = createDelayedTab({
       favicon: 'https://example.com/favicon.ico',
     });
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     const wakePromise = controller.handleAlarm({
@@ -404,7 +405,10 @@ describe('delayedTabsController', () => {
 
   it('does not show a notification when a tab is manually woken', async () => {
     const overdueTab = createDelayedTab();
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     await controller.wakeTabs([overdueTab.id]);
@@ -472,7 +476,10 @@ describe('delayedTabsController', () => {
         collapsed: true,
       },
     });
-    const mock = createChromeMock([groupedTab], [`delayed-tab-${groupedTab.id}`]);
+    const mock = createChromeMock(
+      [groupedTab],
+      [`delayed-tab-${groupedTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     await controller.wakeTabs([groupedTab.id]);
@@ -499,7 +506,10 @@ describe('delayedTabsController', () => {
         collapsed: true,
       },
     });
-    const mock = createChromeMock([groupedTab], [`delayed-tab-${groupedTab.id}`]);
+    const mock = createChromeMock(
+      [groupedTab],
+      [`delayed-tab-${groupedTab.id}`]
+    );
     mock.tabGroupsGet.mockRejectedValueOnce(new Error('Group not found'));
     const controller = createDelayedTabsController(mock.chromeApi);
 
@@ -520,7 +530,10 @@ describe('delayedTabsController', () => {
 
   it('keeps an overdue tab stored when reconcile fails to reopen it', async () => {
     const overdueTab = createDelayedTab({ id: 'overdue-1' });
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     mock.tabsCreate.mockRejectedValueOnce(new Error('Failed to reopen tab'));
     const controller = createDelayedTabsController(mock.chromeApi);
 
@@ -538,7 +551,10 @@ describe('delayedTabsController', () => {
 
   it('shows a notification when startup reconcile wakes overdue tabs', async () => {
     const overdueTab = createDelayedTab();
-    const mock = createChromeMock([overdueTab], [`delayed-tab-${overdueTab.id}`]);
+    const mock = createChromeMock(
+      [overdueTab],
+      [`delayed-tab-${overdueTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     const reconcilePromise = controller.reconcileDelayedTabs();
@@ -598,6 +614,109 @@ describe('delayedTabsController', () => {
     expect(storedTabs[0].url).toBe(browserTab.url);
   });
 
+  it('updates an existing delayed tab when scheduling the same URL again', async () => {
+    const originalWakeTime = Date.now() + 60_000;
+    const existingTab = createDelayedTab({
+      id: 'existing-tab',
+      url: 'https://repeat.example/article',
+      title: 'Original description',
+      wakeTime: originalWakeTime,
+    });
+    const browserTab = {
+      id: 123,
+      url: existingTab.url,
+      title: 'Updated description',
+      favIconUrl: 'https://repeat.example/favicon.ico',
+    } as chrome.tabs.Tab;
+    const mock = createChromeMock(
+      [existingTab],
+      [`delayed-tab-${existingTab.id}`]
+    );
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const updatedWakeTime = Date.now() + 120_000;
+
+    const response = await controller.scheduleTabs(
+      [browserTab],
+      updatedWakeTime
+    );
+
+    expect(response.success).toBe(true);
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        id: existingTab.id,
+        url: existingTab.url,
+        title: browserTab.title,
+        createdAt: existingTab.createdAt,
+        wakeTime: updatedWakeTime,
+      }),
+    ]);
+    expect(mock.getAlarmNames()).toEqual([`delayed-tab-${existingTab.id}`]);
+    expect(mock.alarmsCreate).toHaveBeenLastCalledWith(
+      `delayed-tab-${existingTab.id}`,
+      { when: updatedWakeTime }
+    );
+  });
+
+  it('stores only one delayed tab when the same URL is selected twice', async () => {
+    const tabs = [
+      {
+        id: 123,
+        url: 'https://repeat.example/article',
+        title: 'First description',
+      },
+      {
+        id: 456,
+        url: 'https://repeat.example/article',
+        title: 'Latest description',
+      },
+    ] as chrome.tabs.Tab[];
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const wakeTime = Date.now() + 60_000;
+
+    await controller.scheduleTabs(tabs, wakeTime);
+
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        url: tabs[0].url,
+        title: tabs[1].title,
+        wakeTime,
+      }),
+    ]);
+    expect(mock.tabsRemove).toHaveBeenCalledTimes(2);
+    expect(mock.getAlarmNames()).toHaveLength(1);
+  });
+
+  it('restores the previous alarm if rescheduling the same URL fails', async () => {
+    const existingTab = createDelayedTab({
+      id: 'existing-tab',
+      url: 'https://repeat.example/article',
+      title: 'Original description',
+      wakeTime: Date.now() + 60_000,
+    });
+    const browserTab = {
+      id: 123,
+      url: existingTab.url,
+      title: 'Updated description',
+    } as chrome.tabs.Tab;
+    const mock = createChromeMock(
+      [existingTab],
+      [`delayed-tab-${existingTab.id}`]
+    );
+    mock.tabsRemove.mockRejectedValueOnce(new Error('Failed to close tab'));
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await expect(
+      controller.scheduleTabs([browserTab], Date.now() + 120_000)
+    ).rejects.toThrow('Failed to close tab');
+
+    expect(mock.getStoredTabs()).toEqual([existingTab]);
+    expect(mock.alarmsCreate).toHaveBeenLastCalledWith(
+      `delayed-tab-${existingTab.id}`,
+      { when: existingTab.wakeTime }
+    );
+  });
+
   it('updates the wake time for an existing delayed tab', async () => {
     const futureTab = createDelayedTab({
       id: 'future-1',
@@ -607,7 +726,10 @@ describe('delayedTabsController', () => {
     const controller = createDelayedTabsController(mock.chromeApi);
     const updatedWakeTime = Date.now() + 120_000;
 
-    const response = await controller.updateTabTime(futureTab.id, updatedWakeTime);
+    const response = await controller.updateTabTime(
+      futureTab.id,
+      updatedWakeTime
+    );
 
     expect(response.success).toBe(true);
     expect(mock.getStoredTabs()).toEqual([
@@ -639,7 +761,10 @@ describe('delayedTabsController', () => {
       id: 'tab-title',
       title: 'Original title',
     });
-    const mock = createChromeMock([delayedTab], [`delayed-tab-${delayedTab.id}`]);
+    const mock = createChromeMock(
+      [delayedTab],
+      [`delayed-tab-${delayedTab.id}`]
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     const response = await controller.updateTabTitle(
@@ -696,7 +821,9 @@ describe('delayedTabsController', () => {
       [recurringTab],
       [`delayed-tab-${recurringTab.id}`]
     );
-    mock.alarmsCreate.mockRejectedValueOnce(new Error('Failed to create next alarm'));
+    mock.alarmsCreate.mockRejectedValueOnce(
+      new Error('Failed to create next alarm')
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     const wakePromise = controller.handleAlarm({
@@ -723,7 +850,9 @@ describe('delayedTabsController', () => {
       favIconUrl: 'https://repeat.example/favicon.ico',
     } as chrome.tabs.Tab;
     const mock = createChromeMock();
-    mock.alarmsCreate.mockRejectedValueOnce(new Error('Failed to create alarm'));
+    mock.alarmsCreate.mockRejectedValueOnce(
+      new Error('Failed to create alarm')
+    );
     const controller = createDelayedTabsController(mock.chromeApi);
 
     await expect(
@@ -745,7 +874,12 @@ describe('delayedTabsController', () => {
     const mock = createChromeMock();
     const controller = createDelayedTabsController(mock.chromeApi);
 
-    await controller.scheduleTabs([browserTab], Date.now() + 60_000, undefined, true);
+    await controller.scheduleTabs(
+      [browserTab],
+      Date.now() + 60_000,
+      undefined,
+      true
+    );
 
     expect(mock.tabsRemove).not.toHaveBeenCalled();
     expect(mock.getStoredTabs()).toEqual([
@@ -782,7 +916,9 @@ describe('delayedTabsController', () => {
     expect(mock.tabsCreate).not.toHaveBeenCalled();
     expect(mock.notificationsCreate).toHaveBeenCalledTimes(1);
 
-    await controller.handleNotificationClick(`delayed-tab-wake-${reminderTab.id}`);
+    await controller.handleNotificationClick(
+      `delayed-tab-wake-${reminderTab.id}`
+    );
 
     expect(mock.tabsUpdate).toHaveBeenCalledWith(123, { active: true });
   });
@@ -809,7 +945,9 @@ describe('delayedTabsController', () => {
       active: false,
     });
 
-    await controller.handleNotificationClick(`delayed-tab-wake-${reminderTab.id}`);
+    await controller.handleNotificationClick(
+      `delayed-tab-wake-${reminderTab.id}`
+    );
 
     expect(mock.tabsUpdate).toHaveBeenCalledWith(999, { active: true });
   });

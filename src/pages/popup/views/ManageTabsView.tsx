@@ -46,6 +46,14 @@ function ManageTabsView(): React.ReactElement {
     setSelectedTabs((current) => current.filter((id) => id !== tab.id));
   };
 
+  const openTabWithoutRemoving = async (tab: DelayedTab): Promise<void> => {
+    if (!tab.url) {
+      return;
+    }
+
+    await chrome.tabs.create({ url: tab.url });
+  };
+
   const saveTabTitle = async (
     tab: DelayedTab,
     element: HTMLDivElement
@@ -300,6 +308,15 @@ function ManageTabsView(): React.ReactElement {
                         title={t('common.edit')}
                       >
                         <FontAwesomeIcon icon='pen-to-square' />
+                      </button>
+                      <button
+                        type='button'
+                        className='btn btn-circle btn-ghost btn-sm'
+                        onClick={() => void openTabWithoutRemoving(tab)}
+                        aria-label={t('manageTabs.openWithoutRemoving')}
+                        title={t('manageTabs.openWithoutRemoving')}
+                      >
+                        <FontAwesomeIcon icon='eye' />
                       </button>
                       <button
                         type='button'

@@ -51,7 +51,7 @@ function ManageTabsView(): React.ReactElement {
       return;
     }
 
-    await chrome.tabs.create({ url: tab.url });
+    await chrome.tabs.create({ url: tab.url, active: false });
   };
 
   const saveTabTitle = async (

@@ -39,6 +39,16 @@
       "label": "Lembrar sem fechar as abas",
       "saved": "Lembrete salvo. Suas abas permanecerão abertas."
     },
+    "existingDelay": {
+      "alreadyDelayed": "Já adiada",
+      "reminderSet": "Lembrete agendado",
+      "reopensIn": "Reabrirá em {{time}}",
+      "reminderIn": "Lembrete em {{time}}",
+      "reopeningNow": "Reabrindo agora",
+      "reminderDueNow": "Lembrete para agora",
+      "selectionCount": "Abas já agendadas: {{count}} de {{total}}",
+      "scheduledFor": "Horário agendado: {{date}}"
+    },
     "tabTitle": "Título da aba",
     "selected": "selecionadas",
     "inWindow": "na janela",

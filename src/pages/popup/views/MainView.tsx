@@ -1,12 +1,21 @@
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import ExistingDelayBadge from '@components/ExistingDelayBadge';
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link, useSearch } from '@tanstack/react-router';
+import useDelayedTabs from '@hooks/useDelayedTabs';
 import useDelaySettings from '@hooks/useDelaySettings';
 import useTabSelection from '@hooks/useTabSelection';
+import { Link, useSearch } from '@tanstack/react-router';
 import { DelayOption, PresetButtonId, TabSelectionMode } from '@types';
+import { matchSelectedTabsToDelayedTabs } from '@utils/delayedTabsList';
 import { scheduleTabs } from '@utils/delayedTabsRuntime';
 import { createPresetDelayOptions } from '@utils/delayPresets';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../utils/useTheme';
@@ -16,6 +25,7 @@ function MainView(): React.ReactElement {
   const { remindOnly: initialRemindOnly } = useSearch({ from: '/' });
   const { theme, toggleTheme } = useTheme();
   const { loading: settingsLoading, settings } = useDelaySettings();
+  const { delayedTabs, loading: delayedTabsLoading } = useDelayedTabs();
   const {
     activeTab,
     allWindowTabs,
@@ -27,18 +37,20 @@ function MainView(): React.ReactElement {
     tabsToDelay,
   } = useTabSelection();
 
-  const loading = settingsLoading || tabsLoading;
+  const loading = settingsLoading || tabsLoading || delayedTabsLoading;
   const titleDraftRef = useRef('');
   const [remindOnly, setRemindOnly] = useState(initialRemindOnly);
   const [reminderSaved, setReminderSaved] = useState(false);
   const locale =
-    i18n.language || document.documentElement.lang || navigator.language || 'en';
+    i18n.language ||
+    document.documentElement.lang ||
+    navigator.language ||
+    'en';
   const translate = useCallback(
     (key: string, options?: Record<string, unknown>): string =>
       t(key, options) as string,
     [t]
   );
-
   const delayOptions = useMemo<DelayOption[]>(
     () =>
       createPresetDelayOptions({
@@ -51,13 +63,23 @@ function MainView(): React.ReactElement {
   const delayOptionsById = useMemo(
     () =>
       new Map(
-        delayOptions.map((option) => [option.id as PresetButtonId, option] as const)
+        delayOptions.map(
+          (option) => [option.id as PresetButtonId, option] as const
+        )
       ),
     [delayOptions]
   );
   const totalQuickActions = settings.visiblePresetButtons.length;
   const quickActionRows = Math.ceil(totalQuickActions / 3);
   const isCompactLayout = quickActionRows >= 4;
+  const delayedSelectionMatches = useMemo(
+    () => matchSelectedTabsToDelayedTabs(tabsToDelay, delayedTabs),
+    [delayedTabs, tabsToDelay]
+  );
+  const selectedDelayedTab =
+    tabsToDelay.length === 1
+      ? delayedSelectionMatches.activeMatch?.delayedTab
+      : undefined;
 
   useEffect(() => {
     if (tabsToDelay.length === 1) {
@@ -106,7 +128,9 @@ function MainView(): React.ReactElement {
   };
 
   const handleOpenSettings = async (): Promise<void> => {
-    const settingsUrl = chrome.runtime.getURL('public/html/options.html#settings');
+    const settingsUrl = chrome.runtime.getURL(
+      'public/html/options.html#settings'
+    );
     await chrome.tabs.create({ url: settingsUrl });
     window.close();
   };
@@ -120,7 +144,7 @@ function MainView(): React.ReactElement {
   }
 
   return (
-    <div className='card max-h-[600px] w-[40rem] overflow-hidden rounded-none bg-base-300 shadow-md'>
+    <div className='card max-h-[600px] w-[40rem] overflow-y-auto overflow-x-hidden rounded-none bg-base-300 shadow-md'>
       <div className={`card-body ${isCompactLayout ? 'p-5' : 'p-6'}`}>
         <div
           className={`flex items-center justify-between ${isCompactLayout ? 'mb-4' : 'mb-5'}`}
@@ -203,7 +227,9 @@ function MainView(): React.ReactElement {
                 disabled={highlightedTabs.length <= 1}
               >
                 {t('popup.tabs.highlighted')}{' '}
-                {highlightedTabs.length > 1 ? `(${highlightedTabs.length})` : ''}
+                {highlightedTabs.length > 1
+                  ? `(${highlightedTabs.length})`
+                  : ''}
               </button>
               <button
                 type='button'
@@ -231,23 +257,29 @@ function MainView(): React.ReactElement {
                     }}
                   />
                 )}
-                <div
-                  className='min-w-0 flex-1 truncate text-sm font-medium text-base-content/80 outline-none'
-                  key={activeTab.id}
-                  contentEditable
-                  suppressContentEditableWarning
-                  role='textbox'
-                  aria-label={t('popup.tabTitle')}
-                  onFocus={(event) => {
-                    if (!titleDraftRef.current) {
-                      event.currentTarget.textContent = '';
-                    }
-                  }}
-                  onInput={(event) => {
-                    titleDraftRef.current = event.currentTarget.textContent ?? '';
-                  }}
-                >
-                  {activeTab.title || t('manageTabs.untitledTab')}
+                <div className='min-w-0 flex-1'>
+                  <div
+                    className='truncate text-sm font-medium text-base-content/80 outline-none'
+                    key={activeTab.id}
+                    contentEditable
+                    suppressContentEditableWarning
+                    role='textbox'
+                    aria-label={t('popup.tabTitle')}
+                    onFocus={(event) => {
+                      if (!titleDraftRef.current) {
+                        event.currentTarget.textContent = '';
+                      }
+                    }}
+                    onInput={(event) => {
+                      titleDraftRef.current =
+                        event.currentTarget.textContent ?? '';
+                    }}
+                  >
+                    {activeTab.title || t('manageTabs.untitledTab')}
+                  </div>
+                  {selectedDelayedTab && (
+                    <ExistingDelayBadge delayedTab={selectedDelayedTab} />
+                  )}
                 </div>
               </div>
             )}
@@ -271,11 +303,31 @@ function MainView(): React.ReactElement {
                 {t('popup.inWindow')}
               </div>
             )}
-          </div>
 
+            {selectedMode !== 'active' && selectedDelayedTab && (
+              <ExistingDelayBadge delayedTab={selectedDelayedTab} />
+            )}
+
+            {selectedMode !== 'active' &&
+              !selectedDelayedTab &&
+              delayedSelectionMatches.matchCount > 0 && (
+                <div className='mt-1 flex items-center gap-1.5 text-xs font-medium text-base-content/70'>
+                  <span
+                    className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-success'
+                    aria-hidden='true'
+                  />
+                  {t('popup.existingDelay.selectionCount', {
+                    count: delayedSelectionMatches.matchCount,
+                    total: tabsToDelay.length,
+                  })}
+                </div>
+              )}
+          </div>
         </div>
 
-        <div className={`grid grid-cols-3 ${isCompactLayout ? 'gap-2' : 'gap-2.5'}`}>
+        <div
+          className={`grid grid-cols-3 ${isCompactLayout ? 'gap-2' : 'gap-2.5'}`}
+        >
           {settings.visiblePresetButtons.map((buttonId) => {
             const option = delayOptionsById.get(buttonId);
 
@@ -284,7 +336,7 @@ function MainView(): React.ReactElement {
                 <div key={option.id} className='card'>
                   <button
                     type='button'
-                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-[4.75rem] p-2.5' : 'h-24 p-3'}`}
                     onClick={() => void handleDelay(option)}
                     disabled={reminderSaved}
                   >
@@ -308,7 +360,7 @@ function MainView(): React.ReactElement {
                   <Link
                     to='/custom-delay'
                     search={{ tabId: undefined, remindOnly }}
-                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-[4.75rem] p-2.5' : 'h-24 p-3'}`}
                     onClick={() => {
                       void persistSelectedMode();
                     }}
@@ -333,7 +385,7 @@ function MainView(): React.ReactElement {
                   <Link
                     to='/recurring-delay'
                     search={{ remindOnly }}
-                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-20 p-2.5' : 'h-24 p-3'}`}
+                    className={`group btn flex-col items-center justify-center rounded-xl border-none bg-base-100/70 shadow-sm transition-all duration-200 hover:bg-base-100 ${isCompactLayout ? 'h-[4.75rem] p-2.5' : 'h-24 p-3'}`}
                     onClick={() => {
                       void persistSelectedMode();
                     }}
@@ -356,7 +408,9 @@ function MainView(): React.ReactElement {
           })}
         </div>
 
-        <div className={`flex justify-center ${isCompactLayout ? 'mt-4' : 'mt-6'}`}>
+        <div
+          className={`flex justify-center ${isCompactLayout ? 'mt-4' : 'mt-6'}`}
+        >
           <Link
             to='/manage-tabs'
             className='btn btn-ghost btn-sm text-sm font-medium text-base-content/70 transition-all duration-200 hover:text-delayo-orange'
@@ -367,7 +421,7 @@ function MainView(): React.ReactElement {
         </div>
       </div>
       {reminderSaved && (
-        <div className='toast toast-top toast-center z-10'>
+        <div className='toast toast-center toast-top z-10'>
           <div className='alert alert-success shadow-lg'>
             <span>{t('popup.reminder.saved')}</span>
           </div>

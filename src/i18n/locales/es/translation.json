@@ -39,6 +39,16 @@
       "label": "Recordarme sin cerrar las pestañas",
       "saved": "Recordatorio guardado. Tus pestañas seguirán abiertas."
     },
+    "existingDelay": {
+      "alreadyDelayed": "Ya aplazada",
+      "reminderSet": "Recordatorio programado",
+      "reopensIn": "Se reabrirá en {{time}}",
+      "reminderIn": "Recordatorio en {{time}}",
+      "reopeningNow": "Se reabre ahora",
+      "reminderDueNow": "El recordatorio es ahora",
+      "selectionCount": "Pestañas ya programadas: {{count}} de {{total}}",
+      "scheduledFor": "Programación: {{date}}"
+    },
     "tabTitle": "Título de la pestaña",
     "selected": "seleccionadas",
     "inWindow": "en esta ventana",

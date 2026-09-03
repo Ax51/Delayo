@@ -1,16 +1,18 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { RelativeDelayValues } from '@utils/dateTime';
+import ExistingDelayBadge from '@components/ExistingDelayBadge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import useTabSelection from '@hooks/useTabSelection';
-import type { RelativeDelayValues } from '@utils/dateTime';
-import { scheduleTabs } from '@utils/delayedTabsRuntime';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import {
   formatDateTimeLocalInput,
   getDateFromRelativeDelay,
   getMinimumCustomDelayDate,
   getRelativeDelayValues,
 } from '@utils/dateTime';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { matchSelectedTabsToDelayedTabs } from '@utils/delayedTabsList';
+import { scheduleTabs } from '@utils/delayedTabsRuntime';
 import { useTranslation } from 'react-i18next';
 
 interface RelativeDelayInputValues {
@@ -88,6 +90,14 @@ function CustomDelayView(): React.ReactElement {
     [delayedTabs, tabId]
   );
   const isEditing = typeof tabId === 'string' && tabId.length > 0;
+  const delayedSelectionMatches = useMemo(
+    () => matchSelectedTabsToDelayedTabs(tabsToDelay, delayedTabs),
+    [delayedTabs, tabsToDelay]
+  );
+  const selectedDelayedTab =
+    !isEditing && tabsToDelay.length === 1
+      ? delayedSelectionMatches.activeMatch?.delayedTab
+      : undefined;
 
   const syncFromDate = (nextDate: Date): void => {
     const now = new Date();
@@ -228,7 +238,12 @@ function CustomDelayView(): React.ReactElement {
           }))
         : tabsToDelay;
 
-    await scheduleTabs(tabsWithTitle, nextDate.getTime(), undefined, remindOnly);
+    await scheduleTabs(
+      tabsWithTitle,
+      nextDate.getTime(),
+      undefined,
+      remindOnly
+    );
 
     if (remindOnly) {
       setReminderSaved(true);
@@ -246,7 +261,7 @@ function CustomDelayView(): React.ReactElement {
     (isEditing ? Boolean(editingTab) : tabsToDelay.length > 0) &&
     isCustomDateValid &&
     selectedDate.getTime() >= minimumCustomDate.getTime();
-  const isLoading = tabSelectionLoading || (isEditing && delayedTabsLoading);
+  const isLoading = tabSelectionLoading || delayedTabsLoading;
 
   if (isLoading) {
     return (
@@ -257,7 +272,7 @@ function CustomDelayView(): React.ReactElement {
   }
 
   return (
-    <div className='card w-80 rounded-none bg-base-300 shadow-md'>
+    <div className='card max-h-[600px] w-80 overflow-y-auto overflow-x-hidden rounded-none bg-base-300 shadow-md'>
       <div className='card-body p-6'>
         <div className='mb-5 flex items-center'>
           <Link
@@ -273,7 +288,7 @@ function CustomDelayView(): React.ReactElement {
           </h2>
         </div>
 
-        <div className='mb-5'>
+        <div className='mb-4'>
           <div className='mb-2 text-sm font-medium text-base-content/80'>
             {isEditing ? `${t('common.edit')}:` : `${t('popup.delay')}:`}
           </div>
@@ -304,7 +319,8 @@ function CustomDelayView(): React.ReactElement {
                       }
                     }}
                     onInput={(event) => {
-                      titleDraftRef.current = event.currentTarget.textContent ?? '';
+                      titleDraftRef.current =
+                        event.currentTarget.textContent ?? '';
                     }}
                     onBlur={saveTitleOnBlur}
                   >
@@ -343,7 +359,8 @@ function CustomDelayView(): React.ReactElement {
                       }
                     }}
                     onInput={(event) => {
-                      titleDraftRef.current = event.currentTarget.textContent ?? '';
+                      titleDraftRef.current =
+                        event.currentTarget.textContent ?? '';
                     }}
                     onBlur={saveTitleOnBlur}
                   >
@@ -375,6 +392,26 @@ function CustomDelayView(): React.ReactElement {
                 {t('popup.inWindow')}
               </div>
             )}
+
+            {selectedDelayedTab && (
+              <ExistingDelayBadge delayedTab={selectedDelayedTab} stacked />
+            )}
+
+            {!isEditing &&
+              !selectedDelayedTab &&
+              selectedMode !== 'active' &&
+              delayedSelectionMatches.matchCount > 0 && (
+                <div className='mt-2 flex items-center gap-1.5 text-xs font-medium text-base-content/70'>
+                  <span
+                    className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-success'
+                    aria-hidden='true'
+                  />
+                  {t('popup.existingDelay.selectionCount', {
+                    count: delayedSelectionMatches.matchCount,
+                    total: tabsToDelay.length,
+                  })}
+                </div>
+              )}
           </div>
         </div>
 
@@ -446,7 +483,7 @@ function CustomDelayView(): React.ReactElement {
               className='btn btn-primary border-none shadow-sm transition-all duration-200 hover:shadow'
               disabled={!canDelay || reminderSaved}
             >
-              {isEditing
+              {isEditing || selectedDelayedTab
                 ? t('customDelay.updateTab')
                 : t('customDelay.delayTab')}
             </button>
@@ -454,7 +491,7 @@ function CustomDelayView(): React.ReactElement {
         </form>
       </div>
       {reminderSaved && (
-        <div className='toast toast-top toast-center z-10'>
+        <div className='toast toast-center toast-top z-10'>
           <div className='alert alert-success shadow-lg'>
             <span>{t('popup.reminder.saved')}</span>
           </div>

@@ -39,6 +39,16 @@
       "label": "Remind me without closing tabs",
       "saved": "Reminder saved. Your tabs will stay open."
     },
+    "existingDelay": {
+      "alreadyDelayed": "Already delayed",
+      "reminderSet": "Reminder set",
+      "reopensIn": "Reopens in {{time}}",
+      "reminderIn": "Reminder in {{time}}",
+      "reopeningNow": "Reopening now",
+      "reminderDueNow": "Reminder due now",
+      "selectionCount": "{{count}} of {{total}} already scheduled",
+      "scheduledFor": "Scheduled for {{date}}"
+    },
     "tabTitle": "Tab title",
     "selected": "selected",
     "inWindow": "in this window",

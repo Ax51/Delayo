@@ -130,4 +130,19 @@ describe('dateTime', () => {
 
     vi.useRealTimers();
   });
+
+  it('formats time left from an explicit reference time', () => {
+    const now = new Date('2026-03-18T10:00:00.000Z').getTime();
+
+    expect(formatTimeLeft(now + 90 * 60 * 1000, labels, now)).toBe('1h 30m');
+  });
+
+  it('rounds partial minutes up for countdowns', () => {
+    const now = new Date('2026-03-18T10:00:00.000Z').getTime();
+
+    expect(formatTimeLeft(now + 30_000, labels, now)).toBe('1m');
+    expect(formatTimeLeft(now + 60 * 60 * 1000 + 1_000, labels, now)).toBe(
+      '1h 1m'
+    );
+  });
 });

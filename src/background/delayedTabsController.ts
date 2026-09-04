@@ -30,6 +30,11 @@ interface WakeNotificationTarget {
   windowId?: number;
 }
 
+interface WakeTargetResult {
+  tab: chrome.tabs.Tab;
+  restoredGroup?: DelayedTabGroup;
+}
+
 function getAlarmName(tabId: string): string {
   return `${ALARM_PREFIX}${tabId}`;
 }
@@ -353,7 +358,7 @@ export function createDelayedTabsController(
   async function openTab(
     tab: DelayedTab,
     { notify }: Pick<WakeOptions, 'notify'>
-  ): Promise<chrome.tabs.Tab | null> {
+  ): Promise<WakeTargetResult | null> {
     if (!tab.url) {
       return null;
     }
@@ -389,37 +394,43 @@ export function createDelayedTabsController(
     });
 
     if (!openedTab.id || !group) {
-      return openedTab;
+      return { tab: openedTab };
     }
 
-    await restoreTabGroup(openedTab.id, group);
+    const restoredGroup = await restoreTabGroup(
+      openedTab.id,
+      openedTab.windowId,
+      group
+    );
 
-    return openedTab;
+    return { tab: openedTab, restoredGroup };
   }
 
   async function restoreTabGroup(
     tabId: number,
+    tabWindowId: number,
     group: DelayedTabGroup
-  ): Promise<void> {
+  ): Promise<DelayedTabGroup> {
     try {
       if (typeof group.id === 'number') {
-        await chromeApi.tabGroups.get(group.id);
+        const existingGroup = await chromeApi.tabGroups.get(group.id);
         await chromeApi.tabs.group({
           groupId: group.id,
           tabIds: [tabId],
         });
 
-        return;
+        return {
+          ...group,
+          id: existingGroup.id,
+          windowId: existingGroup.windowId,
+        };
       }
     } catch {
       // Fall through to recreate the group when the original no longer exists.
     }
 
     const groupId = await chromeApi.tabs.group({
-      createProperties:
-        typeof group.windowId === 'number'
-          ? { windowId: group.windowId }
-          : undefined,
+      createProperties: { windowId: tabWindowId },
       tabIds: [tabId],
     });
 
@@ -437,11 +448,20 @@ export function createDelayedTabsController(
       updateProperties.collapsed = group.collapsed;
     }
 
-    if (Object.keys(updateProperties).length === 0) {
-      return;
+    if (Object.keys(updateProperties).length > 0) {
+      try {
+        await chromeApi.tabGroups.update(groupId, updateProperties);
+      } catch (error) {
+        // The group already exists, so a styling failure must not reopen the tab.
+        console.warn('Failed to restore tab group appearance:', error);
+      }
     }
 
-    await chromeApi.tabGroups.update(groupId, updateProperties);
+    return {
+      ...group,
+      id: groupId,
+      windowId: tabWindowId,
+    };
   }
 
   async function captureTabGroup(
@@ -540,17 +560,17 @@ export function createDelayedTabsController(
     tab: DelayedTab,
     existingTab: chrome.tabs.Tab,
     notify: boolean
-  ): Promise<chrome.tabs.Tab> {
+  ): Promise<WakeTargetResult> {
     const notificationId = notify ? await createWakeNotification(tab) : null;
     await saveWakeNotificationTargetSafely(notificationId, existingTab);
 
-    return existingTab;
+    return { tab: existingTab };
   }
 
   async function wakeReminderOrOpenTab(
     tab: DelayedTab,
     notify: boolean
-  ): Promise<chrome.tabs.Tab | null> {
+  ): Promise<WakeTargetResult | null> {
     if (tab.remindOnly && typeof tab.sourceTabId === 'number') {
       try {
         const existingTab = await chromeApi.tabs.get(tab.sourceTabId);
@@ -564,6 +584,35 @@ export function createDelayedTabsController(
     return openTab(tab, { notify });
   }
 
+  function remapStoredTabGroup(
+    tabs: DelayedTab[],
+    sourceGroup: DelayedTabGroup | undefined,
+    restoredGroup: DelayedTabGroup | undefined
+  ): DelayedTab[] {
+    if (
+      typeof sourceGroup?.id !== 'number' ||
+      typeof restoredGroup?.id !== 'number' ||
+      (sourceGroup.id === restoredGroup.id &&
+        sourceGroup.windowId === restoredGroup.windowId)
+    ) {
+      return tabs;
+    }
+
+    return tabs.map((tab) =>
+      tab.group?.id === sourceGroup.id &&
+      tab.group?.windowId === sourceGroup.windowId
+        ? {
+            ...tab,
+            group: {
+              ...tab.group,
+              id: restoredGroup.id,
+              windowId: restoredGroup.windowId,
+            },
+          }
+        : tab
+    );
+  }
+
   async function processWakeTarget(
     currentTabs: DelayedTab[],
     tab: DelayedTab,
@@ -574,15 +623,26 @@ export function createDelayedTabsController(
     let workingTabs = await saveDelayedTabs(
       replaceTab(currentTabs, originalTab.id, [wakingTab])
     );
-    let wokenTab: chrome.tabs.Tab | null;
+    let wakeResult: WakeTargetResult | null;
 
     try {
-      wokenTab = await wakeReminderOrOpenTab(originalTab, options.notify);
+      wakeResult = await wakeReminderOrOpenTab(originalTab, options.notify);
     } catch {
       return saveDelayedTabs(
         replaceTab(workingTabs, originalTab.id, [originalTab])
       );
     }
+
+    workingTabs = remapStoredTabGroup(
+      workingTabs,
+      originalTab.group,
+      wakeResult?.restoredGroup
+    );
+    const [restoredOriginalTab] = remapStoredTabGroup(
+      [originalTab],
+      originalTab.group,
+      wakeResult?.restoredGroup
+    );
 
     let replacementTabs: DelayedTab[] = [];
     let clearOriginalAlarm = true;
@@ -590,8 +650,8 @@ export function createDelayedTabsController(
 
     if (options.rescheduleRecurring) {
       const rescheduledTab = buildRecurringReschedule(
-        originalTab,
-        wokenTab?.id
+        restoredOriginalTab,
+        wakeResult?.tab.id
       );
 
       if (rescheduledTab) {
@@ -600,7 +660,7 @@ export function createDelayedTabsController(
           createdRecurringAlarmId = rescheduledTab.id;
           replacementTabs = [rescheduledTab];
         } catch {
-          replacementTabs = [originalTab];
+          replacementTabs = [restoredOriginalTab];
           clearOriginalAlarm = false;
         }
       }
@@ -626,7 +686,7 @@ export function createDelayedTabsController(
       }
 
       return saveDelayedTabs(
-        replaceTab(workingTabs, originalTab.id, [originalTab])
+        replaceTab(workingTabs, originalTab.id, [restoredOriginalTab])
       );
     }
   }

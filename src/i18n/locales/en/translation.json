@@ -199,6 +199,42 @@
       "day": "d",
       "hour": "h",
       "minute": "m"
+    },
+    "openFullList": "Open full list",
+    "operationFailed": "Could not complete the action. Please try again.",
+    "noMatchingTabs": "No tabs in the selected periods.",
+    "selectedCount": "{{count}} selected",
+    "filters": {
+      "label": "Filter by wake time",
+      "all": "All",
+      "threeHours": "Within 3 hours",
+      "today": "Today",
+      "thisWeek": "By end of week",
+      "nextWeek": "Next week",
+      "beyondWeek": "More than a week",
+      "allHint": "Show all tabs and clear filters",
+      "threeHoursHint": "From now until 3 hours from now",
+      "todayHint": "Today, in your local time zone",
+      "thisWeekHint": "From today through Sunday",
+      "nextWeekHint": "Next Monday through Sunday",
+      "beyondWeekHint": "More than 7 days from now; may overlap with next week"
+    },
+    "bulk": {
+      "edit": "Edit time",
+      "title": "Change time for {{count}} selected tabs",
+      "add": "Add time",
+      "set": "Move to date",
+      "addHint": "Add this duration to each tab’s existing wake time.",
+      "setHint": "Set the same date and time for every selected tab.",
+      "invalidDuration": "Enter a positive duration in whole days, hours or minutes.",
+      "apply": "Apply to {{count}} tabs"
+    },
+    "operationFailedDetails": "Could not complete the action: {{message}}",
+    "errors": {
+      "extensionUnavailable": "This page is not connected to the extension. Open Delayo from its Chrome toolbar icon.",
+      "backgroundUnavailable": "The extension background did not respond. Reload Delayo at chrome://extensions, then close this page and reopen Delayo.",
+      "invalidTime": "At least one selected tab would still have a wake time in the past. Add more time or choose a future date for all selected tabs.",
+      "invalidDuration": "Enter a valid positive duration or a valid future date."
     }
   },
   "onboarding": {

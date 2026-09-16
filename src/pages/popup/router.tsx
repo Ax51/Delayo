@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -5,7 +6,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
-import React from 'react';
+import { isManageTabsPage } from '@utils/manageTabsPage';
 
 import CustomDelayView from './views/CustomDelayView';
 import MainView from './views/MainView';
@@ -59,7 +60,7 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 const memoryHistory = createMemoryHistory({
-  initialEntries: ['/'],
+  initialEntries: [isManageTabsPage ? '/manage-tabs' : '/'],
 });
 
 const router = createRouter({

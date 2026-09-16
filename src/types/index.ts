@@ -1,3 +1,4 @@
+import type { DelayedTabsErrorCode } from '@utils/delayedTabsErrors';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
 export const SUPPORTED_LANGUAGES = ['en', 'pt', 'es'] as const;
@@ -113,6 +114,16 @@ export interface UpdateTabTimeMessage {
   wakeTime: number;
 }
 
+export type DelayedTabsTimeChange =
+  | { mode: 'add'; durationMs: number }
+  | { mode: 'set'; wakeTime: number };
+
+export interface UpdateTabsTimeMessage {
+  action: 'update-tabs-time';
+  tabIds: string[];
+  change: DelayedTabsTimeChange;
+}
+
 export interface UpdateTabTitleMessage {
   action: 'update-tab-title';
   tabId: string;
@@ -133,6 +144,7 @@ export type DelayedTabsRuntimeMessage =
   | WakeTabsMessage
   | PreviewTabMessage
   | UpdateTabTimeMessage
+  | UpdateTabsTimeMessage
   | UpdateTabTitleMessage
   | RemoveTabsMessage
   | ReconcileDelayedTabsMessage;
@@ -141,6 +153,7 @@ export interface DelayedTabsRuntimeResponse {
   success: boolean;
   delayedTabs?: DelayedTab[];
   error?: string;
+  errorCode?: DelayedTabsErrorCode;
 }
 
 export interface ExtensionStorageSchema {

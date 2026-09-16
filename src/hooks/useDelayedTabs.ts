@@ -1,22 +1,24 @@
-import { DelayedTab } from '@types';
+import { useCallback, useEffect, useState } from 'react';
+import { DelayedTab, DelayedTabsTimeChange } from '@types';
+import { loadSortedDelayedTabs, sortDelayedTabs } from '@utils/delayedTabsList';
 import {
   removeTabs,
+  updateTabsTime,
   updateTabTime,
   updateTabTitle,
   wakeTabs,
 } from '@utils/delayedTabsRuntime';
-import {
-  loadSortedDelayedTabs,
-  sortDelayedTabs,
-} from '@utils/delayedTabsList';
 import { subscribeToStorageKey } from '@utils/extensionStorage';
-import { useCallback, useEffect, useState } from 'react';
 
 export default function useDelayedTabs(): {
   delayedTabs: DelayedTab[];
   loading: boolean;
   refresh: () => Promise<void>;
   removeDelayedTabs: (tabIds: string[]) => Promise<void>;
+  updateDelayedTabsTime: (
+    tabIds: string[],
+    change: DelayedTabsTimeChange
+  ) => Promise<void>;
   updateDelayedTabTime: (tabId: string, wakeTime: number) => Promise<void>;
   updateDelayedTabTitle: (tabId: string, title: string) => Promise<void>;
   wakeDelayedTabs: (tabIds: string[]) => Promise<void>;
@@ -45,10 +47,13 @@ export default function useDelayedTabs(): {
     });
   }, []);
 
-  const wakeDelayedTabs = useCallback(async (tabIds: string[]): Promise<void> => {
-    const response = await wakeTabs(tabIds);
-    setDelayedTabs(sortDelayedTabs(response.delayedTabs ?? []));
-  }, []);
+  const wakeDelayedTabs = useCallback(
+    async (tabIds: string[]): Promise<void> => {
+      const response = await wakeTabs(tabIds);
+      setDelayedTabs(sortDelayedTabs(response.delayedTabs ?? []));
+    },
+    []
+  );
 
   const removeDelayedTabs = useCallback(
     async (tabIds: string[]): Promise<void> => {
@@ -61,6 +66,14 @@ export default function useDelayedTabs(): {
   const updateDelayedTabTime = useCallback(
     async (tabId: string, wakeTime: number): Promise<void> => {
       const response = await updateTabTime(tabId, wakeTime);
+      setDelayedTabs(sortDelayedTabs(response.delayedTabs ?? []));
+    },
+    []
+  );
+
+  const updateDelayedTabsTime = useCallback(
+    async (tabIds: string[], change: DelayedTabsTimeChange): Promise<void> => {
+      const response = await updateTabsTime(tabIds, change);
       setDelayedTabs(sortDelayedTabs(response.delayedTabs ?? []));
     },
     []
@@ -80,6 +93,7 @@ export default function useDelayedTabs(): {
     refresh,
     removeDelayedTabs,
     updateDelayedTabTime,
+    updateDelayedTabsTime,
     updateDelayedTabTitle,
     wakeDelayedTabs,
   };

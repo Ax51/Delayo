@@ -936,10 +936,16 @@ describe('delayedTabsController', () => {
   it.each([
     ['https://repeat.example/article', 'https://repeat.example/article#one'],
     ['https://repeat.example/article#one', 'https://repeat.example/article'],
-    ['https://repeat.example/article#one', 'https://repeat.example/article#two'],
+    [
+      'https://repeat.example/article#one',
+      'https://repeat.example/article#two',
+    ],
     ['https://repeat.example/article', 'https://repeat.example/article?a=1'],
     ['https://repeat.example/article?a=1', 'https://repeat.example/article'],
-    ['https://repeat.example/article?a=1', 'https://repeat.example/article?a=2'],
+    [
+      'https://repeat.example/article?a=1',
+      'https://repeat.example/article?a=2',
+    ],
     [
       'https://repeat.example/article?a=1#one',
       'https://repeat.example/article?a=2#two',
@@ -992,9 +998,12 @@ describe('delayedTabsController', () => {
 
     await controller.scheduleTabs(tabs, Date.now() + 60_000);
 
-    expect(mock.getStoredTabs().map((tab) => tab.url).sort()).toEqual(
-      tabs.map((tab) => tab.url).sort()
-    );
+    expect(
+      mock
+        .getStoredTabs()
+        .map((tab) => tab.url)
+        .sort()
+    ).toEqual(tabs.map((tab) => tab.url).sort());
     expect(new Set(mock.getStoredTabs().map((tab) => tab.id)).size).toBe(5);
     expect(mock.getAlarmNames()).toHaveLength(5);
   });
@@ -1057,6 +1066,166 @@ describe('delayedTabsController', () => {
         when: updatedWakeTime,
       }
     );
+  });
+
+  it('adds 20 minutes to four future tabs and updates all four alarms', async () => {
+    const tabs = [15, 120, 240, 1440].map((minutes, index) =>
+      createDelayedTab({
+        id: `future-${index}`,
+        wakeTime: Date.now() + minutes * 60_000,
+      })
+    );
+    const mock = createChromeMock(tabs);
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const response = await controller.updateTabsTime(
+      tabs.map(({ id }) => id),
+      {
+        mode: 'add',
+        durationMs: 20 * 60_000,
+      }
+    );
+    expect(response.success).toBe(true);
+    expect(mock.getStoredTabs().map(({ wakeTime }) => wakeTime)).toEqual(
+      tabs.map(({ wakeTime }) => wakeTime + 20 * 60_000)
+    );
+    expect(
+      (await mock.chromeApi.alarms.getAll()).map(
+        ({ scheduledTime }) => scheduledTime
+      )
+    ).toEqual(tabs.map(({ wakeTime }) => wakeTime + 20 * 60_000));
+  });
+
+  it('bulk adds time using the latest queued schedule and preserves unselected tabs', async () => {
+    const first = createDelayedTab({
+      id: 'one',
+      wakeTime: Date.now() + 15 * 60_000,
+    });
+    const second = createDelayedTab({
+      id: 'two',
+      wakeTime: Date.now() + 120 * 60_000,
+    });
+    const untouched = createDelayedTab({ id: 'three' });
+    const mock = createChromeMock([first, second, untouched]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const earlierEdit = controller.updateTabTime(
+      'one',
+      Date.now() + 30 * 60_000
+    );
+    const bulkEdit = controller.updateTabsTime(
+      ['one', 'two', 'one', 'missing'],
+      { mode: 'add', durationMs: 20 * 60_000 }
+    );
+    await earlierEdit;
+    await bulkEdit;
+    expect(mock.getStoredTabs()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ...first,
+          wakeTime: Date.now() + 50 * 60_000,
+        }),
+        expect.objectContaining({
+          ...second,
+          wakeTime: Date.now() + 140 * 60_000,
+        }),
+        expect.objectContaining(untouched),
+      ])
+    );
+    expect(mock.alarmsCreate).toHaveBeenCalledWith('delayed-tab-one', {
+      when: Date.now() + 50 * 60_000,
+    });
+    expect(mock.alarmsCreate).toHaveBeenCalledWith('delayed-tab-two', {
+      when: Date.now() + 140 * 60_000,
+    });
+  });
+
+  it('bulk sets the same time and ignores a stale alarm already queued for a moved tab', async () => {
+    const first = createDelayedTab({ id: 'one' });
+    const second = createDelayedTab({ id: 'two' });
+    const mock = createChromeMock([first, second]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const wakeTime = Date.now() + 120_000;
+    const edit = controller.updateTabsTime(['one', 'two'], {
+      mode: 'set',
+      wakeTime,
+    });
+    const alarm = controller.handleAlarm({
+      name: 'delayed-tab-one',
+      scheduledTime: first.wakeTime,
+    });
+    await edit;
+    await alarm;
+    expect(mock.tabsCreate).not.toHaveBeenCalled();
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({ ...first, wakeTime }),
+      expect.objectContaining({ ...second, wakeTime }),
+    ]);
+    expect(mock.alarmsCreate).toHaveBeenCalledWith('delayed-tab-one', {
+      when: wakeTime,
+    });
+    expect(mock.alarmsCreate).toHaveBeenCalledWith('delayed-tab-two', {
+      when: wakeTime,
+    });
+  });
+
+  it.each(['alarm', 'storage'])(
+    'restores all original bulk schedules if %s fails',
+    async (failure) => {
+      const first = createDelayedTab({
+        id: 'one',
+        wakeTime: Date.now() + 60_000,
+      });
+      const second = createDelayedTab({
+        id: 'two',
+        wakeTime: Date.now() + 120_000,
+      });
+      const mock = createChromeMock([first, second]);
+      if (failure === 'alarm') {
+        mock.alarmsCreate
+          .mockResolvedValueOnce(undefined)
+          .mockRejectedValueOnce(new Error('Update failed'));
+      } else {
+        vi.mocked(mock.chromeApi.storage.local.set).mockRejectedValueOnce(
+          new Error('Update failed')
+        );
+      }
+      const controller = createDelayedTabsController(mock.chromeApi);
+      await expect(
+        controller.updateTabsTime(['one', 'two'], {
+          mode: 'add',
+          durationMs: 60_000,
+        })
+      ).rejects.toThrow('Update failed');
+      expect(mock.getStoredTabs()).toEqual([first, second]);
+      expect(
+        (await mock.chromeApi.alarms.getAll()).map(
+          ({ name, scheduledTime }) => [name, scheduledTime]
+        )
+      ).toEqual([
+        ['delayed-tab-one', first.wakeTime],
+        ['delayed-tab-two', second.wakeTime],
+      ]);
+    }
+  );
+
+  it('validates all bulk dates before changing any alarms', async () => {
+    const first = createDelayedTab({
+      id: 'one',
+      wakeTime: Date.now() + 60_000,
+    });
+    const second = createDelayedTab({
+      id: 'two',
+      wakeTime: Date.now() - 120_000,
+    });
+    const mock = createChromeMock([first, second]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+    await expect(
+      controller.updateTabsTime(['one', 'two'], {
+        mode: 'add',
+        durationMs: 60_000,
+      })
+    ).rejects.toThrow('Wake time must be in the future');
+    expect(mock.alarmsCreate).not.toHaveBeenCalled();
+    expect(mock.getStoredTabs()).toEqual([first, second]);
   });
 
   it('throws when updating a missing delayed tab', async () => {
@@ -1138,6 +1307,7 @@ describe('delayedTabsController', () => {
     );
     const controller = createDelayedTabsController(mock.chromeApi);
 
+    vi.setSystemTime(recurringTab.wakeTime);
     const wakePromise = controller.handleAlarm({
       name: `delayed-tab-${recurringTab.id}`,
       scheduledTime: recurringTab.wakeTime,

@@ -1,18 +1,48 @@
 import {
   DelayedTabsRuntimeMessage,
   DelayedTabsRuntimeResponse,
+  DelayedTabsTimeChange,
   RecurrencePattern,
 } from '@types';
+import { DelayedTabsError } from '@utils/delayedTabsErrors';
 
 async function sendDelayedTabsMessage(
   message: DelayedTabsRuntimeMessage
 ): Promise<DelayedTabsRuntimeResponse> {
-  const response =
-    await chrome.runtime.sendMessage<DelayedTabsRuntimeMessage, DelayedTabsRuntimeResponse>(
-      message
+  if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+    throw new DelayedTabsError(
+      'extensionUnavailable',
+      'Extension runtime unavailable'
     );
+  }
+  const response = await chrome.runtime
+    .sendMessage<DelayedTabsRuntimeMessage, DelayedTabsRuntimeResponse>(message)
+    .catch((error: unknown) => {
+      if (
+        error instanceof Error &&
+        /Receiving end does not exist|message port closed|Extension context invalidated/i.test(
+          error.message
+        )
+      ) {
+        throw new DelayedTabsError('backgroundUnavailable', error.message);
+      }
+      throw error;
+    });
 
-  if (!response?.success) {
+  if (!response) {
+    throw new DelayedTabsError(
+      'backgroundUnavailable',
+      'No response from the extension background'
+    );
+  }
+
+  if (!response.success) {
+    if (response.errorCode) {
+      throw new DelayedTabsError(
+        response.errorCode,
+        response.error || 'Delayed tabs operation failed'
+      );
+    }
     throw new Error(response?.error || 'Delayed tabs operation failed');
   }
 
@@ -85,4 +115,11 @@ export function reconcileDelayedTabs(): Promise<DelayedTabsRuntimeResponse> {
   return sendDelayedTabsMessage({
     action: 'reconcile-delayed-tabs',
   });
+}
+
+export function updateTabsTime(
+  tabIds: string[],
+  change: DelayedTabsTimeChange
+): Promise<DelayedTabsRuntimeResponse> {
+  return sendDelayedTabsMessage({ action: 'update-tabs-time', tabIds, change });
 }

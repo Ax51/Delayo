@@ -1,7 +1,5 @@
-import {
-  DelayedTabsRuntimeMessage,
-  DelayedTabsRuntimeResponse,
-} from '@types';
+import { DelayedTabsRuntimeMessage, DelayedTabsRuntimeResponse } from '@types';
+import { DelayedTabsError } from '@utils/delayedTabsErrors';
 
 import { createDelayedTabsController } from './delayedTabsController';
 
@@ -65,7 +63,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       .catch((error: unknown) => {
         sendResponse({
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to schedule tabs',
+          error:
+            error instanceof Error ? error.message : 'Failed to schedule tabs',
         } satisfies DelayedTabsRuntimeResponse);
       });
 
@@ -93,7 +92,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       .catch((error: unknown) => {
         sendResponse({
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to preview tab',
+          error:
+            error instanceof Error ? error.message : 'Failed to preview tab',
         } satisfies DelayedTabsRuntimeResponse);
       });
 
@@ -107,7 +107,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       .catch((error: unknown) => {
         sendResponse({
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to remove tabs',
+          error:
+            error instanceof Error ? error.message : 'Failed to remove tabs',
         } satisfies DelayedTabsRuntimeResponse);
       });
 
@@ -128,6 +129,23 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         } satisfies DelayedTabsRuntimeResponse);
       });
 
+    return true;
+  }
+
+  if (delayedTabsRequest.action === 'update-tabs-time') {
+    void delayedTabsController
+      .updateTabsTime(delayedTabsRequest.tabIds, delayedTabsRequest.change)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({
+          success: false,
+          errorCode: error instanceof DelayedTabsError ? error.code : undefined,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to update delayed tabs time',
+        } satisfies DelayedTabsRuntimeResponse);
+      });
     return true;
   }
 

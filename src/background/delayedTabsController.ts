@@ -2,8 +2,10 @@ import {
   DelayedTab,
   DelayedTabGroup,
   DelayedTabsRuntimeResponse,
+  DelayedTabsTimeChange,
   RecurrencePattern,
 } from '@types';
+import { changeDelayedTabsTime } from '@utils/delayedTabsManagement';
 import generateUniqueTabId from '@utils/generateUniqueTabId';
 import normalizeDelayedTabs from '@utils/normalizeDelayedTabs';
 import { calculateNextWakeTime } from '@utils/recurrence';
@@ -21,6 +23,7 @@ type DelayedTabStatus = NonNullable<DelayedTab['status']>;
 type NotificationPermissionLevel = 'granted' | 'denied';
 
 interface WakeOptions {
+  onlyIfDue?: boolean;
   notify: boolean;
   rescheduleRecurring: boolean;
 }
@@ -172,6 +175,10 @@ export interface DelayedTabsController {
   updateTabTime: (
     tabId: string,
     wakeTime: number
+  ) => Promise<DelayedTabsRuntimeResponse>;
+  updateTabsTime: (
+    tabIds: string[],
+    change: DelayedTabsTimeChange
   ) => Promise<DelayedTabsRuntimeResponse>;
   updateTabTitle: (
     tabId: string,
@@ -725,7 +732,11 @@ export function createDelayedTabsController(
     return enqueue(async () => {
       const requestedIds = new Set(tabIds.map(String));
       const delayedTabs = await loadDelayedTabs();
-      const tabsToWake = delayedTabs.filter((tab) => requestedIds.has(tab.id));
+      const tabsToWake = delayedTabs.filter(
+        (tab) =>
+          requestedIds.has(tab.id) &&
+          (!options.onlyIfDue || tab.wakeTime <= Date.now())
+      );
 
       let currentTabs = delayedTabs;
 
@@ -970,6 +981,37 @@ export function createDelayedTabsController(
     });
   }
 
+  async function updateTabsTime(
+    tabIds: string[],
+    change: DelayedTabsTimeChange
+  ): Promise<DelayedTabsRuntimeResponse> {
+    return enqueue(async () => {
+      const delayedTabs = await loadDelayedTabs();
+      const updatedTabs = changeDelayedTabsTime(
+        delayedTabs,
+        tabIds,
+        change,
+        Date.now()
+      );
+      const selectedIds = new Set(tabIds);
+      const originals = delayedTabs.filter((tab) => selectedIds.has(tab.id));
+      if (originals.length === 0) {
+        return { success: true, delayedTabs };
+      }
+      try {
+        await createAlarms(
+          updatedTabs.filter((tab) => selectedIds.has(tab.id))
+        );
+        const persistedTabs = await saveDelayedTabs(updatedTabs);
+        return { success: true, delayedTabs: persistedTabs };
+      } catch (error) {
+        // Attempt every rollback even if restoring one alarm fails.
+        await Promise.allSettled(originals.map((tab) => createAlarm(tab)));
+        throw error;
+      }
+    });
+  }
+
   async function updateTabTitle(
     tabId: string,
     title: string
@@ -1004,6 +1046,7 @@ export function createDelayedTabsController(
     await wakeStoredTabs([tabId], {
       notify: true,
       rescheduleRecurring: true,
+      onlyIfDue: true,
     });
   }
 
@@ -1103,6 +1146,7 @@ export function createDelayedTabsController(
         rescheduleRecurring: false,
       }),
     updateTabTime,
+    updateTabsTime,
     updateTabTitle,
     removeTabs,
     handleAlarm,

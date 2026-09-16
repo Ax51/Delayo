@@ -199,6 +199,42 @@
       "day": "d",
       "hour": "h",
       "minute": "m"
+    },
+    "openFullList": "Abrir lista completa",
+    "operationFailed": "Não foi possível concluir a ação. Tente novamente.",
+    "noMatchingTabs": "Nenhuma aba nos períodos selecionados.",
+    "selectedCount": "{{count}} selecionadas",
+    "filters": {
+      "label": "Filtrar por data de abertura",
+      "all": "Todas",
+      "threeHours": "Em até 3 horas",
+      "today": "Hoje",
+      "thisWeek": "Até o fim da semana",
+      "nextWeek": "Próxima semana",
+      "beyondWeek": "Mais de uma semana",
+      "allHint": "Mostrar todas as abas e limpar os filtros",
+      "threeHoursHint": "De agora até daqui a 3 horas",
+      "todayHint": "Hoje, no seu fuso horário local",
+      "thisWeekHint": "De hoje até domingo",
+      "nextWeekHint": "Da próxima segunda-feira até domingo",
+      "beyondWeekHint": "Mais de 7 dias a partir de agora; pode coincidir com a próxima semana"
+    },
+    "bulk": {
+      "edit": "Alterar horário",
+      "title": "Alterar o horário de {{count}} abas selecionadas",
+      "add": "Adicionar tempo",
+      "set": "Mover para uma data",
+      "addHint": "Adiciona esta duração ao horário de abertura atual de cada aba.",
+      "setHint": "Define a mesma data e hora para todas as abas selecionadas.",
+      "invalidDuration": "Insira uma duração positiva em dias, horas ou minutos inteiros.",
+      "apply": "Aplicar a {{count}} abas"
+    },
+    "operationFailedDetails": "Não foi possível concluir a ação: {{message}}",
+    "errors": {
+      "extensionUnavailable": "Esta página não está conectada à extensão. Abra o Delayo pelo ícone na barra do Chrome.",
+      "backgroundUnavailable": "O processo em segundo plano não respondeu. Recarregue o Delayo em chrome://extensions, feche esta página e abra o Delayo novamente.",
+      "invalidTime": "Pelo menos uma aba selecionada ainda teria um horário de abertura no passado. Adicione mais tempo ou escolha uma data futura para todas.",
+      "invalidDuration": "Insira uma duração positiva válida ou uma data futura válida."
     }
   },
   "onboarding": {

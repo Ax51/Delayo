@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
+
 import '../../i18n';
 
+import { isManageTabsPage } from '@utils/manageTabsPage';
+
 import Onboarding from '../../components/Onboarding';
-import {
-  getOnboardingCompleted,
-} from '../../utils/extensionStorage';
+import { getOnboardingCompleted } from '../../utils/extensionStorage';
 import useTheme from '../../utils/useTheme';
 import Router from './router';
 
@@ -28,7 +29,15 @@ function Popup(): React.ReactElement {
   return (
     <>
       {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
-      <Router />
+      <div
+        className={
+          isManageTabsPage
+            ? 'flex min-h-screen justify-center bg-base-200 px-4 py-6'
+            : undefined
+        }
+      >
+        <Router />
+      </div>
     </>
   );
 }

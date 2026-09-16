@@ -86,6 +86,20 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  if (delayedTabsRequest.action === 'preview-tab') {
+    void delayedTabsController
+      .previewTab(delayedTabsRequest.tabId)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to preview tab',
+        } satisfies DelayedTabsRuntimeResponse);
+      });
+
+    return true;
+  }
+
   if (delayedTabsRequest.action === 'remove-tabs') {
     void delayedTabsController
       .removeTabs(delayedTabsRequest.tabIds)

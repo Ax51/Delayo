@@ -496,6 +496,159 @@ describe('delayedTabsController', () => {
     expect(mock.tabGroupsUpdate).not.toHaveBeenCalled();
   });
 
+  it('previews a grouped recurring tab without changing its schedule', async () => {
+    const groupedTab = createDelayedTab({
+      isRecurring: true,
+      recurrencePattern: { type: 'daily', time: '12:00' },
+      group: {
+        id: 77,
+        windowId: 321,
+        title: 'Work',
+        color: 'blue',
+        collapsed: true,
+      },
+    });
+    const alarmName = `delayed-tab-${groupedTab.id}`;
+    const mock = createChromeMock([groupedTab], [alarmName]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    const response = await controller.previewTab(groupedTab.id);
+
+    expect(response.success).toBe(true);
+    expect(mock.tabsCreate).toHaveBeenCalledWith({
+      url: groupedTab.url,
+      windowId: 321,
+      active: false,
+    });
+    expect(mock.tabsGroup).toHaveBeenCalledWith({
+      groupId: 77,
+      tabIds: [999],
+    });
+    expect(mock.getStoredTabs()).toEqual([groupedTab]);
+    expect(mock.getAlarmNames()).toEqual([alarmName]);
+    expect(mock.alarmsCreate).not.toHaveBeenCalled();
+    expect(mock.alarmsClear).not.toHaveBeenCalled();
+    expect(mock.notificationsCreate).not.toHaveBeenCalled();
+  });
+
+  it('reuses a group recreated by preview after the original window closes', async () => {
+    const firstTab = createDelayedTab({
+      group: {
+        id: 77,
+        windowId: 123,
+        title: 'Work',
+        color: 'blue',
+        collapsed: true,
+      },
+    });
+    const secondTab = createDelayedTab({
+      id: 'tab-2',
+      url: 'https://second.example',
+      group: { ...firstTab.group },
+    });
+    const alarmNames = [firstTab, secondTab].map(
+      (tab) => `delayed-tab-${tab.id}`
+    );
+    const mock = createChromeMock([firstTab, secondTab], alarmNames);
+    mock.tabsCreate.mockRejectedValueOnce(new Error('Window not found'));
+    mock.tabGroupsGet.mockRejectedValueOnce(new Error('Group not found'));
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.previewTab(firstTab.id);
+
+    expect(mock.tabsCreate).toHaveBeenNthCalledWith(1, {
+      url: firstTab.url,
+      windowId: 123,
+      active: false,
+    });
+    expect(mock.tabsCreate).toHaveBeenNthCalledWith(2, {
+      url: firstTab.url,
+      active: false,
+    });
+    expect(mock.tabsGroup).toHaveBeenNthCalledWith(1, {
+      createProperties: { windowId: 321 },
+      tabIds: [999],
+    });
+    expect(mock.tabGroupsUpdate).toHaveBeenCalledWith(456, {
+      title: 'Work',
+      color: 'blue',
+      collapsed: true,
+    });
+    expect(mock.getStoredTabs()).toEqual(
+      [firstTab, secondTab].map((tab) =>
+        expect.objectContaining({
+          ...tab,
+          group: { ...tab.group, id: 456, windowId: 321 },
+        })
+      )
+    );
+    expect(mock.getAlarmNames()).toEqual(alarmNames);
+    expect(mock.alarmsCreate).not.toHaveBeenCalled();
+    expect(mock.alarmsClear).not.toHaveBeenCalled();
+
+    const restartedController = createDelayedTabsController(mock.chromeApi);
+    await restartedController.previewTab(firstTab.id);
+    await restartedController.wakeTabs([secondTab.id]);
+
+    expect(mock.tabsGroup).toHaveBeenCalledTimes(3);
+    for (const call of [2, 3]) {
+      expect(mock.tabsGroup).toHaveBeenNthCalledWith(call, {
+        groupId: 456,
+        tabIds: [999],
+      });
+    }
+    expect(mock.tabGroupsUpdate).toHaveBeenCalledTimes(1);
+    expect(mock.getStoredTabs()).toEqual([
+      expect.objectContaining({
+        ...firstTab,
+        group: { ...firstTab.group, id: 456, windowId: 321 },
+      }),
+    ]);
+  });
+
+  it('previews an ungrouped tab in the background without removing it', async () => {
+    const tab = createDelayedTab();
+    const mock = createChromeMock([tab]);
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.previewTab(tab.id);
+
+    expect(mock.tabsCreate).toHaveBeenCalledWith({
+      url: tab.url,
+      active: false,
+    });
+    expect(mock.tabsGroup).not.toHaveBeenCalled();
+    expect(mock.getStoredTabs()).toEqual([tab]);
+    expect(mock.notificationsCreate).not.toHaveBeenCalled();
+  });
+
+  it('preserves the delayed tab and alarm when preview fails', async () => {
+    const tab = createDelayedTab();
+    const alarmName = `delayed-tab-${tab.id}`;
+    const mock = createChromeMock([tab], [alarmName]);
+    mock.tabsCreate.mockRejectedValueOnce(new Error('Cannot open tab'));
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await expect(controller.previewTab(tab.id)).rejects.toThrow(
+      'Cannot open tab'
+    );
+
+    expect(mock.getStoredTabs()).toEqual([tab]);
+    expect(mock.getAlarmNames()).toEqual([alarmName]);
+    expect(mock.alarmsClear).not.toHaveBeenCalled();
+  });
+
+  it('does not preview a delayed tab that has already been removed', async () => {
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await expect(controller.previewTab('missing')).rejects.toThrow(
+      'Delayed tab not found'
+    );
+
+    expect(mock.tabsCreate).not.toHaveBeenCalled();
+  });
+
   it('recreates the tab group when the original group no longer exists', async () => {
     const groupedTab = createDelayedTab({
       group: {

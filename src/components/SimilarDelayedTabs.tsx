@@ -48,14 +48,6 @@ function SimilarDelayedTabs({
                     search: { tabId, remindOnly: false },
                   });
                 },
-                onOpen: async (savedTab) => {
-                  if (savedTab.url) {
-                    await chrome.tabs.create({
-                      url: savedTab.url,
-                      active: false,
-                    });
-                  }
-                },
                 onWake: async (savedTab) => {
                   await wakeTabs([savedTab.id]);
                 },

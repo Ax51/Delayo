@@ -168,6 +168,7 @@ export interface DelayedTabsController {
     remindOnly?: boolean
   ) => Promise<DelayedTabsRuntimeResponse>;
   wakeTabs: (tabIds: string[]) => Promise<DelayedTabsRuntimeResponse>;
+  previewTab: (tabId: string) => Promise<DelayedTabsRuntimeResponse>;
   updateTabTime: (
     tabId: string,
     wakeTime: number
@@ -357,7 +358,7 @@ export function createDelayedTabsController(
 
   async function openTab(
     tab: DelayedTab,
-    { notify }: Pick<WakeOptions, 'notify'>
+    { notify, active = !notify }: { notify: boolean; active?: boolean }
   ): Promise<WakeTargetResult | null> {
     if (!tab.url) {
       return null;
@@ -371,7 +372,7 @@ export function createDelayedTabsController(
     const targetWindowId = group?.windowId;
     const createProperties: chrome.tabs.CreateProperties = {
       url: tab.url,
-      ...(notify ? { active: false } : {}),
+      ...(!active ? { active: false } : {}),
     };
     let openedTab: chrome.tabs.Tab;
 
@@ -611,6 +612,32 @@ export function createDelayedTabsController(
           }
         : tab
     );
+  }
+
+  async function previewTab(
+    tabId: string
+  ): Promise<DelayedTabsRuntimeResponse> {
+    return enqueue(async () => {
+      const delayedTabs = await loadDelayedTabs();
+      const tab = delayedTabs.find((storedTab) => storedTab.id === tabId);
+
+      if (!tab) {
+        throw new Error('Delayed tab not found');
+      }
+
+      const result = await openTab(tab, { notify: false, active: false });
+      const updatedTabs = remapStoredTabGroup(
+        delayedTabs,
+        tab.group,
+        result?.restoredGroup
+      );
+      const persistedTabs =
+        updatedTabs === delayedTabs
+          ? delayedTabs
+          : await saveDelayedTabs(updatedTabs);
+
+      return { success: true, delayedTabs: persistedTabs };
+    });
   }
 
   async function processWakeTarget(
@@ -1069,6 +1096,7 @@ export function createDelayedTabsController(
     setupContextMenu,
     initializeStorage,
     scheduleTabs,
+    previewTab,
     wakeTabs: (tabIds) =>
       wakeStoredTabs(tabIds, {
         notify: false,

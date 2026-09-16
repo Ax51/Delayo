@@ -32,14 +32,6 @@ function ManageTabsView(): React.ReactElement {
     setSelectedTabs((current) => current.filter((id) => id !== tab.id));
   };
 
-  const openTabWithoutRemoving = async (tab: DelayedTab): Promise<void> => {
-    if (!tab.url) {
-      return;
-    }
-
-    await chrome.tabs.create({ url: tab.url, active: false });
-  };
-
   const toggleSelectMode = (): void => {
     setSelectMode((current) => {
       if (current) {
@@ -210,7 +202,6 @@ function ManageTabsView(): React.ReactElement {
                       ? undefined
                       : {
                           onEdit: editTab,
-                          onOpen: openTabWithoutRemoving,
                           onWake: wakeTabNow,
                           onRemove: removeTab,
                         }

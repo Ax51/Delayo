@@ -8,12 +8,12 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { DelayedTab } from '@types';
 import { formatDateTime, formatTimeLeft } from '@utils/dateTime';
+import { previewTab } from '@utils/delayedTabsRuntime';
 import { getTabGroupBadgeStyle } from '@utils/tabGroupBadge';
 import { useTranslation } from 'react-i18next';
 
 export interface DelayedTabCardActions {
   onEdit: (tabId: string) => Promise<void>;
-  onOpen: (tab: DelayedTab) => Promise<void>;
   onWake: (tab: DelayedTab) => Promise<void>;
   onRemove: (tab: DelayedTab) => Promise<void>;
 }
@@ -138,7 +138,11 @@ function DelayedTabCard({
           <button
             type='button'
             className='btn btn-circle btn-ghost btn-sm'
-            onClick={() => void actions.onOpen(tab)}
+            onClick={() => {
+              if (tab.url) {
+                void previewTab(tab.id);
+              }
+            }}
             aria-label={t('manageTabs.openWithoutRemoving')}
             title={t('manageTabs.openWithoutRemoving')}
           >

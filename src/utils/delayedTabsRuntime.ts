@@ -54,6 +54,13 @@ export function updateTabTime(
   });
 }
 
+export function previewTab(tabId: string): Promise<DelayedTabsRuntimeResponse> {
+  return sendDelayedTabsMessage({
+    action: 'preview-tab',
+    tabId,
+  });
+}
+
 export function updateTabTitle(
   tabId: string,
   title: string

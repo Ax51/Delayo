@@ -102,6 +102,11 @@ export interface WakeTabsMessage {
   tabIds: string[];
 }
 
+export interface PreviewTabMessage {
+  action: 'preview-tab';
+  tabId: string;
+}
+
 export interface UpdateTabTimeMessage {
   action: 'update-tab-time';
   tabId: string;
@@ -126,6 +131,7 @@ export interface ReconcileDelayedTabsMessage {
 export type DelayedTabsRuntimeMessage =
   | ScheduleTabsMessage
   | WakeTabsMessage
+  | PreviewTabMessage
   | UpdateTabTimeMessage
   | UpdateTabTitleMessage
   | RemoveTabsMessage

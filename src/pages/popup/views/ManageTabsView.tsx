@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import DelayedTabCard from '@components/DelayedTabCard';
+import ScrollArea from '@components/ScrollArea';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -84,9 +85,9 @@ function ManageTabsView(): React.ReactElement {
   }
 
   return (
-    <div className='card w-[40rem] rounded-none bg-base-300 shadow-md'>
-      <div className='card-body p-6'>
-        <div className='mb-5 flex items-center justify-between'>
+    <div className='card max-h-[600px] w-[40rem] overflow-hidden rounded-none bg-base-300 shadow-md'>
+      <div className='card-body min-h-0 p-6'>
+        <div className='mb-5 flex shrink-0 items-center justify-between'>
           <div className='flex items-center'>
             <Link
               to='/'
@@ -134,8 +135,8 @@ function ManageTabsView(): React.ReactElement {
             </p>
           </div>
         ) : (
-          <div className='max-h-[400px] overflow-y-auto'>
-            <div className='mb-3 flex items-center justify-between'>
+          <div className='flex min-h-0 flex-col'>
+            <div className='mb-3 flex shrink-0 items-center justify-between'>
               <div className='flex items-center'>
                 <button
                   type='button'
@@ -191,7 +192,7 @@ function ManageTabsView(): React.ReactElement {
               )}
             </div>
 
-            <div className='space-y-3'>
+            <ScrollArea contentClassName='space-y-3' fadeSize='large'>
               {delayedTabs.map((tab) => (
                 <DelayedTabCard
                   key={tab.id}
@@ -232,7 +233,7 @@ function ManageTabsView(): React.ReactElement {
                   }
                 />
               ))}
-            </div>
+            </ScrollArea>
           </div>
         )}
       </div>

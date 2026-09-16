@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import DelayedTabCard from './DelayedTabCard';
+import ScrollArea from './ScrollArea';
 
 interface SimilarDelayedTabsProps {
   tabs: DelayedTab[];
@@ -32,7 +33,11 @@ function SimilarDelayedTabs({
       <p className='mt-1 text-xs text-base-content/60'>
         {t('popup.existingDelay.savedSeparately')}
       </p>
-      <ul className='mt-3 max-h-64 space-y-3 overflow-y-auto'>
+      <ScrollArea
+        className='mt-3 max-h-64'
+        contentTag='ul'
+        contentClassName='space-y-3'
+      >
         {tabs.map((tab) => (
           <li key={tab.id} className='min-w-0'>
             <DelayedTabCard
@@ -58,7 +63,7 @@ function SimilarDelayedTabs({
             />
           </li>
         ))}
-      </ul>
+      </ScrollArea>
     </div>
   );
 }

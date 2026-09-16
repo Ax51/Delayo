@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { RelativeDelayValues } from '@utils/dateTime';
 import ExistingDelayBadge from '@components/ExistingDelayBadge';
 import SimilarDelayedTabs from '@components/SimilarDelayedTabs';
+import ScrollArea from '@components/ScrollArea';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import useTabSelection from '@hooks/useTabSelection';
@@ -273,7 +274,7 @@ function CustomDelayView(): React.ReactElement {
   }
 
   return (
-    <div className='card max-h-[600px] w-80 overflow-y-auto overflow-x-hidden rounded-none bg-base-300 shadow-md'>
+    <ScrollArea className='card max-h-[600px] w-80 rounded-none bg-base-300 shadow-md'>
       <div className='card-body p-6'>
         <div className='mb-5 flex items-center'>
           <Link
@@ -509,7 +510,7 @@ function CustomDelayView(): React.ReactElement {
           </div>
         </div>
       )}
-    </div>
+    </ScrollArea>
   );
 }
 

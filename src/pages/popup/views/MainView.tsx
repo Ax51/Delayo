@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import ExistingDelayBadge from '@components/ExistingDelayBadge';
 import SimilarDelayedTabs from '@components/SimilarDelayedTabs';
+import ScrollArea from '@components/ScrollArea';
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useDelayedTabs from '@hooks/useDelayedTabs';
@@ -145,7 +146,10 @@ function MainView(): React.ReactElement {
   }
 
   return (
-    <div className='card max-h-[600px] w-[40rem] overflow-y-auto overflow-x-hidden rounded-none bg-base-300 shadow-md'>
+    <ScrollArea
+      className='card max-h-[600px] w-[40rem] rounded-none bg-base-300 shadow-md'
+      fadeSize='large'
+    >
       <div className={`card-body ${isCompactLayout ? 'p-5' : 'p-6'}`}>
         <div
           className={`flex items-center justify-between ${isCompactLayout ? 'mb-4' : 'mb-5'}`}
@@ -439,7 +443,7 @@ function MainView(): React.ReactElement {
           </div>
         </div>
       )}
-    </div>
+    </ScrollArea>
   );
 }
 

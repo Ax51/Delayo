@@ -47,7 +47,7 @@ export function matchSelectedTabsToDelayedTabs(
       earliestDelayedTabByUrl.set(delayedTab.url, delayedTab);
     }
 
-    const baseUrl = delayedTab.url.split('#')[0];
+    const baseUrl = delayedTab.url.split(/[?#]/, 1)[0];
     if (baseUrl) {
       const baseMatches = delayedTabsByBaseUrl.get(baseUrl) ?? [];
       baseMatches.push(delayedTab);
@@ -66,7 +66,7 @@ export function matchSelectedTabsToDelayedTabs(
 
     const delayedTab = earliestDelayedTabByUrl.get(tab.url);
     const similarTabs = (
-      delayedTabsByBaseUrl.get(tab.url.split('#')[0]) ?? []
+      delayedTabsByBaseUrl.get(tab.url.split(/[?#]/, 1)[0]) ?? []
     ).filter((savedTab) => savedTab.url !== tab.url);
 
     for (const similarTab of similarTabs) {

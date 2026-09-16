@@ -42,7 +42,7 @@
     "existingDelay": {
       "alreadyDelayed": "Already delayed",
       "similarLinks": "Similar links already saved",
-      "savedSeparately": "Links with different or missing #fragments are saved separately.",
+      "savedSeparately": "Links that differ by URL parameters or #fragments are saved separately.",
       "similarSelectionCount": "{{count}} of {{total}} have saved links (including similar URLs)",
       "reminderSet": "Reminder set",
       "reopensIn": "Reopens in {{time}}",

@@ -784,6 +784,13 @@ describe('delayedTabsController', () => {
     ['https://repeat.example/article', 'https://repeat.example/article#one'],
     ['https://repeat.example/article#one', 'https://repeat.example/article'],
     ['https://repeat.example/article#one', 'https://repeat.example/article#two'],
+    ['https://repeat.example/article', 'https://repeat.example/article?a=1'],
+    ['https://repeat.example/article?a=1', 'https://repeat.example/article'],
+    ['https://repeat.example/article?a=1', 'https://repeat.example/article?a=2'],
+    [
+      'https://repeat.example/article?a=1#one',
+      'https://repeat.example/article?a=2#two',
+    ],
   ])('schedules %s and %s independently', async (savedUrl, selectedUrl) => {
     const existingTab = createDelayedTab({
       id: 'existing-tab',
@@ -819,11 +826,13 @@ describe('delayedTabsController', () => {
     expect(mock.getAlarmNames()).toEqual([`delayed-tab-${existingTab.id}`]);
   });
 
-  it('keeps fragment variants separate when scheduling a selection', async () => {
+  it('keeps query and fragment variants separate when scheduling a selection', async () => {
     const tabs = [
       { id: 123, url: 'https://repeat.example/article' },
       { id: 456, url: 'https://repeat.example/article#one' },
       { id: 789, url: 'https://repeat.example/article#two' },
+      { id: 111, url: 'https://repeat.example/article?a=1' },
+      { id: 222, url: 'https://repeat.example/article?a=2#one' },
     ] as chrome.tabs.Tab[];
     const mock = createChromeMock();
     const controller = createDelayedTabsController(mock.chromeApi);
@@ -833,8 +842,8 @@ describe('delayedTabsController', () => {
     expect(mock.getStoredTabs().map((tab) => tab.url).sort()).toEqual(
       tabs.map((tab) => tab.url).sort()
     );
-    expect(new Set(mock.getStoredTabs().map((tab) => tab.id)).size).toBe(3);
-    expect(mock.getAlarmNames()).toHaveLength(3);
+    expect(new Set(mock.getStoredTabs().map((tab) => tab.id)).size).toBe(5);
+    expect(mock.getAlarmNames()).toHaveLength(5);
   });
 
   it('restores the previous alarm if rescheduling the same URL fails', async () => {

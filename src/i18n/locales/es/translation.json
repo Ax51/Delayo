@@ -42,7 +42,7 @@
     "existingDelay": {
       "alreadyDelayed": "Ya aplazada",
       "similarLinks": "Ya hay enlaces similares guardados",
-      "savedSeparately": "Los enlaces con fragmentos # distintos o sin ellos se guardan por separado.",
+      "savedSeparately": "Los enlaces que difieren en los parámetros de la URL o en los fragmentos # se guardan por separado.",
       "similarSelectionCount": "{{count}} de {{total}} tienen enlaces guardados (incluidas URL similares)",
       "reminderSet": "Recordatorio programado",
       "reopensIn": "Se reabrirá en {{time}}",

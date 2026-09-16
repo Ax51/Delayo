@@ -28,6 +28,23 @@ describe('matchSelectedTabsToDelayedTabs', () => {
     ['https://example.com/article#', 'https://example.com/article'],
     ['https://example.com/article?a=1#one', 'https://example.com/article?a=1#two'],
     ['https://example.com/#/one', 'https://example.com/#/two'],
+    ['https://example.com/article?a=1', 'https://example.com/article?a=2'],
+    ['https://example.com/article?a=1', 'https://example.com/article'],
+    ['https://example.com/article', 'https://example.com/article?a=1'],
+    ['https://example.com/article?', 'https://example.com/article'],
+    [
+      'https://example.com/article?a=1&b=2',
+      'https://example.com/article?b=2&a=1',
+    ],
+    [
+      'https://example.com/article?a=1#one',
+      'https://example.com/article?a=2#two',
+    ],
+    ['https://example.com/article#one', 'https://example.com/article?a=1'],
+    [
+      'https://example.com/article?q=a%23b%3Fc',
+      'https://example.com/article?q=other',
+    ],
   ])('reports %s as similar to %s', (selectedUrl, savedUrl) => {
     const selectedTab = createBrowserTab(1, selectedUrl);
     const delayedTab = createDelayedTab('saved', savedUrl, 2_000);
@@ -44,11 +61,11 @@ describe('matchSelectedTabsToDelayedTabs', () => {
   });
 
   it.each([
-    'https://example.com/article?a=2#one',
     'https://example.com/other?a=1#one',
     'https://other.example/article?a=1#one',
     'http://example.com/article?a=1#one',
     'https://example.com/article%23one?a=1',
+    'https://example.com/article%3Fone?a=1',
   ])('does not treat a different base URL as similar: %s', (savedUrl) => {
     const result = matchSelectedTabsToDelayedTabs(
       [createBrowserTab(1, 'https://example.com/article?a=1#one')],
@@ -177,6 +194,9 @@ describe('matchSelectedTabsToDelayedTabs', () => {
       },
     ]);
     expect(result.activeMatch).toEqual(result.matches[0]);
+    expect(result.similarTabs.map((tab) => tab.id)).toEqual([
+      'different-query',
+    ]);
   });
 
   it('does not use another selected tab as the active match', () => {

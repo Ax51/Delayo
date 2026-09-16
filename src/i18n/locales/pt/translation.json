@@ -41,6 +41,9 @@
     },
     "existingDelay": {
       "alreadyDelayed": "Já adiada",
+      "similarLinks": "Links semelhantes já estão salvos",
+      "savedSeparately": "Links com fragmentos # diferentes ou sem eles são salvos separadamente.",
+      "similarSelectionCount": "{{count}} de {{total}} têm links salvos (incluindo URLs semelhantes)",
       "reminderSet": "Lembrete agendado",
       "reopensIn": "Reabrirá em {{time}}",
       "reminderIn": "Lembrete em {{time}}",

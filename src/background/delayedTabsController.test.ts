@@ -780,6 +780,63 @@ describe('delayedTabsController', () => {
     expect(mock.getAlarmNames()).toHaveLength(1);
   });
 
+  it.each([
+    ['https://repeat.example/article', 'https://repeat.example/article#one'],
+    ['https://repeat.example/article#one', 'https://repeat.example/article'],
+    ['https://repeat.example/article#one', 'https://repeat.example/article#two'],
+  ])('schedules %s and %s independently', async (savedUrl, selectedUrl) => {
+    const existingTab = createDelayedTab({
+      id: 'existing-tab',
+      url: savedUrl,
+      wakeTime: Date.now() + 60_000,
+    });
+    const browserTab = { id: 123, url: selectedUrl } as chrome.tabs.Tab;
+    const mock = createChromeMock(
+      [existingTab],
+      [`delayed-tab-${existingTab.id}`]
+    );
+    const controller = createDelayedTabsController(mock.chromeApi);
+    const wakeTime = Date.now() + 120_000;
+
+    const response = await controller.scheduleTabs([browserTab], wakeTime);
+
+    expect(response.success).toBe(true);
+    const storedTabs = mock.getStoredTabs();
+    expect(storedTabs).toHaveLength(2);
+    expect(storedTabs).toContainEqual(expect.objectContaining(existingTab));
+    const newTab = storedTabs.find((tab) => tab.url === selectedUrl)!;
+    expect(newTab.id).not.toBe(existingTab.id);
+    expect(newTab.wakeTime).toBe(wakeTime);
+    expect(mock.getAlarmNames().sort()).toEqual(
+      [`delayed-tab-${existingTab.id}`, `delayed-tab-${newTab.id}`].sort()
+    );
+
+    await controller.removeTabs([newTab.id]);
+
+    expect(mock.getStoredTabs()).toEqual([
+      storedTabs.find((tab) => tab.id === existingTab.id),
+    ]);
+    expect(mock.getAlarmNames()).toEqual([`delayed-tab-${existingTab.id}`]);
+  });
+
+  it('keeps fragment variants separate when scheduling a selection', async () => {
+    const tabs = [
+      { id: 123, url: 'https://repeat.example/article' },
+      { id: 456, url: 'https://repeat.example/article#one' },
+      { id: 789, url: 'https://repeat.example/article#two' },
+    ] as chrome.tabs.Tab[];
+    const mock = createChromeMock();
+    const controller = createDelayedTabsController(mock.chromeApi);
+
+    await controller.scheduleTabs(tabs, Date.now() + 60_000);
+
+    expect(mock.getStoredTabs().map((tab) => tab.url).sort()).toEqual(
+      tabs.map((tab) => tab.url).sort()
+    );
+    expect(new Set(mock.getStoredTabs().map((tab) => tab.id)).size).toBe(3);
+    expect(mock.getAlarmNames()).toHaveLength(3);
+  });
+
   it('restores the previous alarm if rescheduling the same URL fails', async () => {
     const existingTab = createDelayedTab({
       id: 'existing-tab',

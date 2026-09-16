@@ -1,40 +1,26 @@
+import React, { useState } from 'react';
+import DelayedTabCard from '@components/DelayedTabCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Link, useNavigate } from '@tanstack/react-router';
 import useDelayedTabs from '@hooks/useDelayedTabs';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { DelayedTab } from '@types';
-import { formatDateTime, formatTimeLeft } from '@utils/dateTime';
-import { getTabGroupBadgeStyle } from '@utils/tabGroupBadge';
-import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../utils/useTheme';
 
 function ManageTabsView(): React.ReactElement {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const {
     delayedTabs,
     loading,
     removeDelayedTabs,
     updateDelayedTabTitle,
     wakeDelayedTabs,
-  } =
-    useDelayedTabs();
+  } = useDelayedTabs();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
-
-  const locale =
-    i18n.language || document.documentElement.lang || navigator.language || 'en';
-  const timeLeftLabels = useMemo(
-    () => ({
-      day: t('manageTabs.timeUnits.day'),
-      hour: t('manageTabs.timeUnits.hour'),
-      minute: t('manageTabs.timeUnits.minute'),
-      now: t('manageTabs.now'),
-    }),
-    [t]
-  );
 
   const wakeTabNow = async (tab: DelayedTab): Promise<void> => {
     await wakeDelayedTabs([tab.id]);
@@ -54,17 +40,6 @@ function ManageTabsView(): React.ReactElement {
     await chrome.tabs.create({ url: tab.url, active: false });
   };
 
-  const saveTabTitle = async (
-    tab: DelayedTab,
-    element: HTMLDivElement
-  ): Promise<void> => {
-    const title = element.textContent?.trim() ?? '';
-
-    if (title !== (tab.title ?? '')) {
-      await updateDelayedTabTitle(tab.id, title);
-    }
-  };
-
   const toggleSelectMode = (): void => {
     setSelectMode((current) => {
       if (current) {
@@ -77,7 +52,9 @@ function ManageTabsView(): React.ReactElement {
 
   const toggleSelectAll = (): void => {
     setSelectedTabs((current) =>
-      current.length === delayedTabs.length ? [] : delayedTabs.map((tab) => tab.id)
+      current.length === delayedTabs.length
+        ? []
+        : delayedTabs.map((tab) => tab.id)
     );
   };
 
@@ -157,7 +134,9 @@ function ManageTabsView(): React.ReactElement {
               icon='hourglass-empty'
               className='mb-4 h-12 w-12 text-neutral-400'
             />
-            <h3 className='mb-2 text-lg font-medium'>{t('manageTabs.noTabs')}</h3>
+            <h3 className='mb-2 text-lg font-medium'>
+              {t('manageTabs.noTabs')}
+            </h3>
             <p className='text-sm text-base-content/70'>
               {t('manageTabs.noDelayedTabs')}
             </p>
@@ -222,12 +201,22 @@ function ManageTabsView(): React.ReactElement {
 
             <div className='space-y-3'>
               {delayedTabs.map((tab) => (
-                <div
+                <DelayedTabCard
                   key={tab.id}
-                  className='flex items-center justify-between rounded-lg bg-base-100/70 p-4 shadow-sm transition-all duration-200 hover:bg-base-100'
-                >
-                  <div className='mr-4 flex min-w-0 flex-1 items-center'>
-                    {selectMode && (
+                  tab={tab}
+                  onTitleChange={updateDelayedTabTitle}
+                  actions={
+                    selectMode
+                      ? undefined
+                      : {
+                          onEdit: editTab,
+                          onOpen: openTabWithoutRemoving,
+                          onWake: wakeTabNow,
+                          onRemove: removeTab,
+                        }
+                  }
+                  selection={
+                    selectMode && (
                       <button
                         type='button'
                         className='mr-3 flex-shrink-0 cursor-pointer'
@@ -235,7 +224,11 @@ function ManageTabsView(): React.ReactElement {
                         aria-label={t('manageTabs.toggleSelection')}
                       >
                         <FontAwesomeIcon
-                          icon={selectedTabs.includes(tab.id) ? 'check-square' : 'square'}
+                          icon={
+                            selectedTabs.includes(tab.id)
+                              ? 'check-square'
+                              : 'square'
+                          }
                           className={
                             selectedTabs.includes(tab.id)
                               ? 'text-delayo-orange'
@@ -244,102 +237,9 @@ function ManageTabsView(): React.ReactElement {
                           style={{ fontSize: 'large' }}
                         />
                       </button>
-                    )}
-                    {tab.favicon && (
-                      <img
-                        src={tab.favicon}
-                        alt={t('common.faviconAlt')}
-                        className='mr-3 h-5 w-5 flex-shrink-0 rounded-sm'
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <div className='min-w-0 flex-1'>
-                      <div
-                        className='truncate text-sm font-medium text-base-content/80 outline-none'
-                        contentEditable
-                        suppressContentEditableWarning
-                        role='textbox'
-                        aria-label={t('customDelay.tabTitle')}
-                        onFocus={(event) => {
-                          if (!tab.title) {
-                            event.currentTarget.textContent = '';
-                          }
-                        }}
-                        onBlur={(event) =>
-                          void saveTabTitle(tab, event.currentTarget)
-                        }
-                      >
-                        {tab.title || t('manageTabs.untitledTab')}
-                      </div>
-                      {tab.url && (
-                        <div className='truncate text-xs text-base-content/60'>
-                          {tab.url}
-                        </div>
-                      )}
-                      {tab.group && (
-                        <div className='mt-1'>
-                          <span
-                            className='badge badge-sm max-w-full truncate border text-[10px] font-medium'
-                            style={getTabGroupBadgeStyle(tab.group)}
-                          >
-                            {t('manageTabs.groupBadge', {
-                              name:
-                                tab.group.title?.trim() ||
-                                t('manageTabs.unnamedGroup'),
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      <div className='truncate text-xs text-base-content/60'>
-                        {formatDateTime(tab.wakeTime, locale)} (
-                        {formatTimeLeft(tab.wakeTime, timeLeftLabels)})
-                      </div>
-                    </div>
-                  </div>
-                  {!selectMode && (
-                    <div className='flex flex-shrink-0 items-center space-x-1.5'>
-                      <button
-                        type='button'
-                        className='btn btn-circle btn-ghost btn-sm'
-                        onClick={() => void editTab(tab.id)}
-                        aria-label={t('common.edit')}
-                        title={t('common.edit')}
-                      >
-                        <FontAwesomeIcon icon='pen-to-square' />
-                      </button>
-                      <button
-                        type='button'
-                        className='btn btn-circle btn-ghost btn-sm'
-                        onClick={() => void openTabWithoutRemoving(tab)}
-                        aria-label={t('manageTabs.openWithoutRemoving')}
-                        title={t('manageTabs.openWithoutRemoving')}
-                      >
-                        <FontAwesomeIcon icon='eye' />
-                      </button>
-                      <button
-                        type='button'
-                        className='btn btn-circle btn-sm'
-                        style={{ backgroundColor: '#ffb26f', color: '#3B1B00' }}
-                        onClick={() => void wakeTabNow(tab)}
-                        aria-label={t('manageTabs.wakeUp')}
-                        title={t('manageTabs.wakeUp')}
-                      >
-                        <FontAwesomeIcon icon='play' />
-                      </button>
-                      <button
-                        type='button'
-                        className='btn btn-circle btn-outline btn-error btn-sm'
-                        onClick={() => void removeTab(tab)}
-                        aria-label={t('manageTabs.remove')}
-                        title={t('manageTabs.remove')}
-                      >
-                        <FontAwesomeIcon icon='trash-can' />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    )
+                  }
+                />
               ))}
             </div>
           </div>

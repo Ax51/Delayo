@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { RelativeDelayValues } from '@utils/dateTime';
 import ExistingDelayBadge from '@components/ExistingDelayBadge';
+import SimilarDelayedTabs from '@components/SimilarDelayedTabs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useDelayedTabs from '@hooks/useDelayedTabs';
 import useTabSelection from '@hooks/useTabSelection';
@@ -94,9 +95,9 @@ function CustomDelayView(): React.ReactElement {
     () => matchSelectedTabsToDelayedTabs(tabsToDelay, delayedTabs),
     [delayedTabs, tabsToDelay]
   );
-  const selectedDelayedTab =
+  const selectedDelayedMatch =
     !isEditing && tabsToDelay.length === 1
-      ? delayedSelectionMatches.activeMatch?.delayedTab
+      ? delayedSelectionMatches.activeMatch
       : undefined;
 
   const syncFromDate = (nextDate: Date): void => {
@@ -393,12 +394,15 @@ function CustomDelayView(): React.ReactElement {
               </div>
             )}
 
-            {selectedDelayedTab && (
-              <ExistingDelayBadge delayedTab={selectedDelayedTab} stacked />
+            {selectedDelayedMatch?.kind === 'exact' && (
+              <ExistingDelayBadge
+                delayedTab={selectedDelayedMatch.delayedTab}
+                stacked
+              />
             )}
 
             {!isEditing &&
-              !selectedDelayedTab &&
+              !selectedDelayedMatch &&
               selectedMode !== 'active' &&
               delayedSelectionMatches.matchCount > 0 && (
                 <div className='mt-2 flex items-center gap-1.5 text-xs font-medium text-base-content/70'>
@@ -406,13 +410,21 @@ function CustomDelayView(): React.ReactElement {
                     className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-success'
                     aria-hidden='true'
                   />
-                  {t('popup.existingDelay.selectionCount', {
-                    count: delayedSelectionMatches.matchCount,
-                    total: tabsToDelay.length,
-                  })}
+                  {t(
+                    delayedSelectionMatches.similarMatchCount > 0
+                      ? 'popup.existingDelay.similarSelectionCount'
+                      : 'popup.existingDelay.selectionCount',
+                    {
+                      count: delayedSelectionMatches.matchCount,
+                      total: tabsToDelay.length,
+                    }
+                  )}
                 </div>
               )}
           </div>
+          {!isEditing && (
+            <SimilarDelayedTabs tabs={delayedSelectionMatches.similarTabs} />
+          )}
         </div>
 
         <form
@@ -483,7 +495,7 @@ function CustomDelayView(): React.ReactElement {
               className='btn btn-primary border-none shadow-sm transition-all duration-200 hover:shadow'
               disabled={!canDelay || reminderSaved}
             >
-              {isEditing || selectedDelayedTab
+              {isEditing || selectedDelayedMatch?.kind === 'exact'
                 ? t('customDelay.updateTab')
                 : t('customDelay.delayTab')}
             </button>

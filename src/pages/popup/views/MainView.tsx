@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import ExistingDelayBadge from '@components/ExistingDelayBadge';
+import SimilarDelayedTabs from '@components/SimilarDelayedTabs';
 import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useDelayedTabs from '@hooks/useDelayedTabs';
@@ -76,9 +77,9 @@ function MainView(): React.ReactElement {
     () => matchSelectedTabsToDelayedTabs(tabsToDelay, delayedTabs),
     [delayedTabs, tabsToDelay]
   );
-  const selectedDelayedTab =
+  const selectedDelayedMatch =
     tabsToDelay.length === 1
-      ? delayedSelectionMatches.activeMatch?.delayedTab
+      ? delayedSelectionMatches.activeMatch
       : undefined;
 
   useEffect(() => {
@@ -277,8 +278,10 @@ function MainView(): React.ReactElement {
                   >
                     {activeTab.title || t('manageTabs.untitledTab')}
                   </div>
-                  {selectedDelayedTab && (
-                    <ExistingDelayBadge delayedTab={selectedDelayedTab} />
+                  {selectedDelayedMatch?.kind === 'exact' && (
+                    <ExistingDelayBadge
+                      delayedTab={selectedDelayedMatch.delayedTab}
+                    />
                   )}
                 </div>
               </div>
@@ -304,25 +307,34 @@ function MainView(): React.ReactElement {
               </div>
             )}
 
-            {selectedMode !== 'active' && selectedDelayedTab && (
-              <ExistingDelayBadge delayedTab={selectedDelayedTab} />
-            )}
+            {selectedMode !== 'active' &&
+              selectedDelayedMatch?.kind === 'exact' && (
+                <ExistingDelayBadge
+                  delayedTab={selectedDelayedMatch.delayedTab}
+                />
+              )}
 
             {selectedMode !== 'active' &&
-              !selectedDelayedTab &&
+              !selectedDelayedMatch &&
               delayedSelectionMatches.matchCount > 0 && (
                 <div className='mt-1 flex items-center gap-1.5 text-xs font-medium text-base-content/70'>
                   <span
                     className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-success'
                     aria-hidden='true'
                   />
-                  {t('popup.existingDelay.selectionCount', {
-                    count: delayedSelectionMatches.matchCount,
-                    total: tabsToDelay.length,
-                  })}
+                  {t(
+                    delayedSelectionMatches.similarMatchCount > 0
+                      ? 'popup.existingDelay.similarSelectionCount'
+                      : 'popup.existingDelay.selectionCount',
+                    {
+                      count: delayedSelectionMatches.matchCount,
+                      total: tabsToDelay.length,
+                    }
+                  )}
                 </div>
               )}
           </div>
+          <SimilarDelayedTabs tabs={delayedSelectionMatches.similarTabs} />
         </div>
 
         <div

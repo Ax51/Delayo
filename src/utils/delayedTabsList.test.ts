@@ -21,6 +21,138 @@ function createDelayedTab(
 }
 
 describe('matchSelectedTabsToDelayedTabs', () => {
+  it.each([
+    ['https://example.com/article#one', 'https://example.com/article#two'],
+    ['https://example.com/article#one', 'https://example.com/article'],
+    ['https://example.com/article', 'https://example.com/article#one'],
+    ['https://example.com/article#', 'https://example.com/article'],
+    ['https://example.com/article?a=1#one', 'https://example.com/article?a=1#two'],
+    ['https://example.com/#/one', 'https://example.com/#/two'],
+  ])('reports %s as similar to %s', (selectedUrl, savedUrl) => {
+    const selectedTab = createBrowserTab(1, selectedUrl);
+    const delayedTab = createDelayedTab('saved', savedUrl, 2_000);
+    const result = matchSelectedTabsToDelayedTabs([selectedTab], [delayedTab]);
+
+    expect(result.matchCount).toBe(1);
+    expect(result.similarMatchCount).toBe(1);
+    expect(result.similarTabs).toEqual([delayedTab]);
+    expect(result.activeMatch).toEqual({
+      tab: selectedTab,
+      delayedTab,
+      kind: 'similar',
+    });
+  });
+
+  it.each([
+    'https://example.com/article?a=2#one',
+    'https://example.com/other?a=1#one',
+    'https://other.example/article?a=1#one',
+    'http://example.com/article?a=1#one',
+    'https://example.com/article%23one?a=1',
+  ])('does not treat a different base URL as similar: %s', (savedUrl) => {
+    const result = matchSelectedTabsToDelayedTabs(
+      [createBrowserTab(1, 'https://example.com/article?a=1#one')],
+      [createDelayedTab('saved', savedUrl, 2_000)]
+    );
+
+    expect(result.matchCount).toBe(0);
+    expect(result.similarMatchCount).toBe(0);
+    expect(result.activeMatch).toBeUndefined();
+  });
+
+  it('prefers an exact URL over an earlier similar link', () => {
+    const selectedTab = createBrowserTab(1, 'https://example.com/article#one');
+    const result = matchSelectedTabsToDelayedTabs(
+      [selectedTab],
+      [
+        createDelayedTab('similar', 'https://example.com/article#two', 1_000),
+        createDelayedTab('exact', selectedTab.url, 5_000),
+      ]
+    );
+
+    expect(result.matchCount).toBe(1);
+    expect(result.similarMatchCount).toBe(0);
+    expect(result.activeMatch?.kind).toBe('exact');
+    expect(result.activeMatch?.delayedTab.id).toBe('exact');
+    expect(result.similarTabs.map((tab) => tab.id)).toEqual(['similar']);
+  });
+
+  it('uses the earliest similar link and counts mixed selections once per tab', () => {
+    const result = matchSelectedTabsToDelayedTabs(
+      [
+        createBrowserTab(1, 'https://example.com/article#new'),
+        createBrowserTab(2, 'https://example.com/exact'),
+        createBrowserTab(3, 'https://example.com/other'),
+        createBrowserTab(4),
+      ],
+      [
+        createDelayedTab('later', 'https://example.com/article#later', 5_000),
+        createDelayedTab('earlier', 'https://example.com/article', 1_000),
+        createDelayedTab('exact', 'https://example.com/exact', 2_000),
+      ]
+    );
+
+    expect(result.matchCount).toBe(2);
+    expect(result.similarMatchCount).toBe(1);
+    expect(result.activeMatch?.delayedTab.id).toBe('earlier');
+    expect(result.similarTabs.map((tab) => tab.id)).toEqual([
+      'earlier',
+      'later',
+    ]);
+  });
+
+  it('lists each similar saved record once across a selection, sorted by time', () => {
+    const early = createDelayedTab(
+      'early',
+      'https://example.com/article',
+      1_000
+    );
+    const reminder = {
+      ...createDelayedTab('reminder', 'https://example.com/article#two', 2_000),
+      remindOnly: true,
+    };
+    const late = createDelayedTab(
+      'late',
+      'https://example.com/article#one',
+      3_000
+    );
+    const result = matchSelectedTabsToDelayedTabs(
+      [
+        createBrowserTab(1, 'https://example.com/article#new'),
+        createBrowserTab(2, 'https://example.com/article#another'),
+      ],
+      [
+        late,
+        createDelayedTab('unrelated', 'https://example.com/other', 500),
+        reminder,
+        early,
+        createDelayedTab(
+          'invalid',
+          'https://example.com/article#bad',
+          Number.NaN
+        ),
+      ]
+    );
+
+    expect(result.matchCount).toBe(2);
+    expect(result.similarTabs).toEqual([early, reminder, late]);
+  });
+
+  it('keeps independent legacy schedules for the same similar URL visible', () => {
+    const first = createDelayedTab(
+      'first',
+      'https://example.com/article',
+      1_000
+    );
+    const second = createDelayedTab('second', first.url, 2_000);
+    const result = matchSelectedTabsToDelayedTabs(
+      [createBrowserTab(1, 'https://example.com/article#new')],
+      [second, first]
+    );
+
+    expect(result.similarTabs).toEqual([first, second]);
+  });
+
   it('matches selected tabs by exact URL and reports the first tab match', () => {
     const firstTab = createBrowserTab(1, 'https://example.com/article?a=1');
     const secondTab = createBrowserTab(2, 'https://example.com/other');
@@ -41,6 +173,7 @@ describe('matchSelectedTabsToDelayedTabs', () => {
       {
         tab: firstTab,
         delayedTab: expect.objectContaining({ id: 'exact' }),
+        kind: 'exact',
       },
     ]);
     expect(result.activeMatch).toEqual(result.matches[0]);
@@ -93,6 +226,8 @@ describe('matchSelectedTabsToDelayedTabs', () => {
     expect(result).toEqual({
       matches: [],
       matchCount: 0,
+      similarMatchCount: 0,
+      similarTabs: [],
       activeMatch: undefined,
     });
   });

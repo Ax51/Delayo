@@ -160,47 +160,48 @@ function ManageTabsView(): React.ReactElement {
           </div>
         </div>
 
-        <div
-          className='my-3 grid shrink-0 grid-cols-3 gap-2'
-          role='group'
-          aria-label={t('manageTabs.filters.label')}
-        >
-          {(['all', ...delayedTabPeriods] as const).map((period) => {
-            const active =
-              period === 'all'
-                ? periods.length === 0
-                : periods.includes(period);
-            const count =
-              period === 'all'
-                ? delayedTabs.length
-                : delayedTabs.filter((tab) =>
-                    matchesDelayedTabPeriod(tab.wakeTime, period, now)
-                  ).length;
-            return (
-              <button
-                key={period}
-                type='button'
-                disabled={pending}
-                aria-pressed={active}
-                title={t(`manageTabs.filters.${period}Hint`)}
-                onClick={() =>
-                  togglePeriod(period === 'all' ? undefined : period)
-                }
-                className={`flex min-h-16 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${active ? 'border-delayo-orange bg-delayo-orange/20' : 'border-transparent bg-base-100/70 hover:bg-base-100'}`}
-              >
-                <span>{t(`manageTabs.filters.${period}`)}</span>
-                <span className='text-lg font-bold tabular-nums'>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
         {error && (
           <p role='alert' className='mb-2 shrink-0 text-sm text-error'>
             {error}
           </p>
         )}
-        <ScrollArea contentClassName='space-y-3' fadeSize='large'>
+        <ScrollArea contentClassName='space-y-3 pt-3' fadeSize='large'>
+          <div
+            className='grid grid-cols-3 gap-2'
+            role='group'
+            aria-label={t('manageTabs.filters.label')}
+          >
+            {(['all', ...delayedTabPeriods] as const).map((period) => {
+              const active =
+                period === 'all'
+                  ? periods.length === 0
+                  : periods.includes(period);
+              const count =
+                period === 'all'
+                  ? delayedTabs.length
+                  : delayedTabs.filter((tab) =>
+                      matchesDelayedTabPeriod(tab.wakeTime, period, now)
+                    ).length;
+              return (
+                <button
+                  key={period}
+                  type='button'
+                  disabled={pending}
+                  aria-pressed={active}
+                  title={t(`manageTabs.filters.${period}Hint`)}
+                  onClick={() =>
+                    togglePeriod(period === 'all' ? undefined : period)
+                  }
+                  className={`flex min-h-16 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors disabled:opacity-50 ${active ? 'border-delayo-orange bg-delayo-orange/20' : 'border-transparent bg-base-100/70 hover:bg-base-100'}`}
+                >
+                  <span>{t(`manageTabs.filters.${period}`)}</span>
+                  <span className='text-lg font-bold tabular-nums'>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
           {delayedTabs.length === 0 ? (
             <div className='p-8 text-center'>
               <FontAwesomeIcon

@@ -304,7 +304,8 @@ function ManageTabsView(): React.ReactElement {
                   {t('manageTabs.noMatchingTabs')}
                 </p>
               )}
-              <fieldset disabled={pending} className='space-y-3'>
+              {/* Allow the fieldset to shrink below long titles' min-content width. */}
+              <fieldset disabled={pending} className='min-w-0 space-y-3'>
                 {visibleTabs.map((tab) => (
                   <DelayedTabCard
                     key={tab.id}

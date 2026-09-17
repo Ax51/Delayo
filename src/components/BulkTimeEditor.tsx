@@ -25,7 +25,7 @@ function BulkTimeEditor({
     hours: '0',
     minutes: '0',
   });
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => formatDateTimeLocalInput(new Date()));
   const [error, setError] = useState<string | null>(null);
   const durationValues = Object.values(duration).map(Number);
   const hasDuration =
